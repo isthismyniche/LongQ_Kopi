@@ -18,7 +18,7 @@ export const REGULARS: RegularCustomer[] = [
       shirtColor: '#F5F5F5',
       ethnicity: 'Indian',
     },
-    correctReaction: 'You remember uncle lah!',
+    correctReaction: 'Wah, you remember me ah!',
     wrongReaction: 'Aiyah, you forget me already?!',
   },
   {
