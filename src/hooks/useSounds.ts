@@ -53,37 +53,49 @@ export function useSounds() {
     return loadSettings().soundEnabled
   }, [])
 
+  const ensureContext = useCallback(() => {
+    if (!ctxRef.current) {
+      ctxRef.current = createAudioContext()
+    }
+    return ctxRef.current
+  }, [])
+
   const playClick = useCallback(() => {
-    if (!isEnabled() || !ctxRef.current) return
-    playTone(ctxRef.current, 800, 0.08, 'square', 0.15)
-  }, [isEnabled])
+    if (!isEnabled()) return
+    const ctx = ensureContext()
+    if (!ctx) return
+    playTone(ctx, 800, 0.08, 'square', 0.15)
+  }, [isEnabled, ensureContext])
 
   const playServeSuccess = useCallback(() => {
-    if (!isEnabled() || !ctxRef.current) return
-    const ctx = ctxRef.current
+    if (!isEnabled()) return
+    const ctx = ensureContext()
+    if (!ctx) return
     // Happy ding - two ascending tones
     playTone(ctx, 523, 0.15, 'sine', 0.3)
     setTimeout(() => playTone(ctx, 659, 0.2, 'sine', 0.3), 100)
     setTimeout(() => playTone(ctx, 784, 0.3, 'sine', 0.25), 200)
-  }, [isEnabled])
+  }, [isEnabled, ensureContext])
 
   const playServeFail = useCallback(() => {
-    if (!isEnabled() || !ctxRef.current) return
-    const ctx = ctxRef.current
+    if (!isEnabled()) return
+    const ctx = ensureContext()
+    if (!ctx) return
     // Buzzer - low harsh tone
     playTone(ctx, 150, 0.3, 'sawtooth', 0.25)
     playTone(ctx, 155, 0.3, 'sawtooth', 0.2)
-  }, [isEnabled])
+  }, [isEnabled, ensureContext])
 
   const playGameOver = useCallback(() => {
-    if (!isEnabled() || !ctxRef.current) return
-    const ctx = ctxRef.current
+    if (!isEnabled()) return
+    const ctx = ensureContext()
+    if (!ctx) return
     // Descending sad tones
     playTone(ctx, 440, 0.25, 'sine', 0.3)
     setTimeout(() => playTone(ctx, 370, 0.25, 'sine', 0.3), 200)
     setTimeout(() => playTone(ctx, 311, 0.25, 'sine', 0.3), 400)
     setTimeout(() => playTone(ctx, 262, 0.5, 'sine', 0.25), 600)
-  }, [isEnabled])
+  }, [isEnabled, ensureContext])
 
   return {
     playClick,

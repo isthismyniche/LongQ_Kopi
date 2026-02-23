@@ -49,10 +49,28 @@ export default function GameOverModal({ score, drinksServed, avgTime, onPlayAgai
         backgroundColor: '#FFF8E7',
         scale: 2,
       })
-      const link = document.createElement('a')
-      link.download = `longq-kopi-${score}pts.png`
-      link.href = canvas.toDataURL()
-      link.click()
+
+      // Use Web Share API on mobile for saving to photo album
+      if (navigator.share && navigator.canShare) {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return
+          const file = new File([blob], `longq-kopi-${score}pts.png`, { type: 'image/png' })
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: 'LongQ Kopi Score',
+              text: `I scored ${score} points in LongQ Kopi! Can you beat me?`,
+            })
+            return
+          }
+        }, 'image/png')
+      } else {
+        // Fallback: file download on desktop
+        const link = document.createElement('a')
+        link.download = `longq-kopi-${score}pts.png`
+        link.href = canvas.toDataURL()
+        link.click()
+      }
     } catch (err) {
       console.error('Failed to generate image:', err)
     }
@@ -119,10 +137,13 @@ export default function GameOverModal({ score, drinksServed, avgTime, onPlayAgai
         ) : (
           /* Share form */
           <div className="text-center">
-            <h3 className="font-display text-2xl font-bold text-kopi-brown mb-4">Share Your Score</h3>
+            <h3 className="font-display text-2xl font-bold text-kopi-brown mb-2">Share Your Score</h3>
 
             {!saved ? (
               <div className="space-y-4">
+                <p className="text-sm text-kopi-brown/60 mb-2">
+                  Enter your name to save your score and generate a shareable result card.
+                </p>
                 <input
                   type="text"
                   placeholder="Enter your name"
@@ -181,17 +202,20 @@ export default function GameOverModal({ score, drinksServed, avgTime, onPlayAgai
                     </div>
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>Can you beat my score?</p>
+                    <p style={{ fontSize: 11, color: '#C41E3A', margin: '8px 0 0', fontWeight: 600 }}>longqkopi.vercel.app</p>
                   </div>
                 </div>
 
                 {cardGenerated && (
-                  <button
-                    onClick={handleDownload}
-                    className="w-full px-4 py-2 rounded-xl bg-kopi-brown text-white
-                      font-display font-bold cursor-pointer transition-colors hover:bg-kopi-brown/90"
-                  >
-                    Download Image
-                  </button>
+                  <div className="pt-2">
+                    <button
+                      onClick={handleDownload}
+                      className="w-full px-4 py-2 rounded-xl bg-kopi-brown text-white
+                        font-display font-bold cursor-pointer transition-colors hover:bg-kopi-brown/90"
+                    >
+                      Download
+                    </button>
+                  </div>
                 )}
 
                 <div className="flex gap-2">

@@ -83,7 +83,7 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + i * 0.1 }}
             className={`px-6 py-3 rounded-2xl font-display font-bold text-lg text-white shadow-lg
-              active:scale-95 transition-all cursor-pointer ${btn.color}`}
+              active:scale-95 transition-colors cursor-pointer ${btn.color}`}
           >
             {btn.label}
           </motion.button>
