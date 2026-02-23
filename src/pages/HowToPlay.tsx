@@ -53,8 +53,8 @@ export default function HowToPlay() {
               You'll recognise them by their name badge and a floating <strong>"Remember me!"</strong> label.
             </p>
             <ul className="text-kopi-brown/80 space-y-1">
-              <li><strong>First visit (Levels 2-3):</strong> They order a drink normally. Remember what they ordered!</li>
-              <li><strong>Second visit (Levels 4-5):</strong> They'll say <strong>"The usual, please!"</strong> — you need to recall
+              <li><strong>First visit (Level 2):</strong> They order a drink normally. Remember what they ordered!</li>
+              <li><strong>Second visit (Levels 3–4):</strong> They'll say <strong>"The usual, please!"</strong> — you need to recall
                 their drink from memory. A <strong>"Remember me?"</strong> label will appear as a hint.</li>
               <li>Serving their usual correctly earns a special reaction!</li>
             </ul>

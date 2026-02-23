@@ -79,7 +79,7 @@ export function createRegularAssignments(poolType: PoolType): RegularDrinkAssign
 
 /**
  * Try to get a regular for the current order based on the current level.
- * First visits happen in levels 2-3, second visits in levels 4-5.
+ * First visits happen in level 2 only (all three), second visits in levels 3-4.
  * Returns the assignment + visit type, or null if no regular should appear now.
  *
  * Uses a spacing counter to avoid back-to-back regulars.
@@ -95,8 +95,8 @@ export function tryGetRegular(
   // ~40% chance per eligible order to trigger a regular
   if (Math.random() > 0.4) return null
 
-  // First visits in levels 2-3
-  if (currentLevel >= 2 && currentLevel <= 3) {
+  // First visits in level 2 only (all three regulars introduced here)
+  if (currentLevel === 2) {
     const pending = shuffle(assignments.filter(a => !a.firstVisitDone))
     if (pending.length > 0) {
       pending[0].firstVisitDone = true
@@ -104,8 +104,8 @@ export function tryGetRegular(
     }
   }
 
-  // Second visits in levels 4-5
-  if (currentLevel >= 4) {
+  // Second visits in levels 3-4
+  if (currentLevel >= 3 && currentLevel <= 4) {
     const pending = shuffle(assignments.filter(a => a.firstVisitDone && !a.secondVisitDone))
     if (pending.length > 0) {
       pending[0].secondVisitDone = true

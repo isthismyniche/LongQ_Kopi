@@ -36,15 +36,15 @@ Every drink is built from four dimensions:
 |---|---|---|---|---|---|
 | 1 | Morning Shift | 15s | 6 drinks | 2 | Basic drinks only — warm up |
 | 2 | Breakfast Rush | 15s | 13 drinks | 3 | Adds Po, Siu Dai, Peng |
-| 3 | Lunch Hour | 12s | 10 drinks | 4 | Full 44-drink pool unlocked |
-| 4 | Tea Time | 8s | 10 drinks | 5 | Memory test begins |
-| 5 | Supper Crowd | 6s | Endless | 6 | Survival mode, 2.5× multiplier |
+| 3 | Lunch Hour | 12s | 10 drinks | 4 | Full 44-drink pool; regulars return |
+| 4 | Tea Time | 8s | 10 drinks | 5 | Regulars still returning |
+| 5 | Supper Crowd | 5s | Endless | 6 | Survival mode, 2.5× multiplier |
 
 **Scoring:** `(5 + seconds remaining) × level multiplier`. Faster = more points.
 
 ### The Regulars System
 
-Three named regulars — Mr Rajan, Makcik Siti, Uncle Lim — appear throughout the game. In Levels 2–3 they visit for the first time and place a regular order. In Levels 4–5 they return and say *"the usual, please"* — with no drink specified. You have to remember what they had.
+Three named regulars — Mr Rajan, Makcik Siti, Uncle Lim — all appear in Level 2, each placing their first order. From Level 3 onwards they return and say *"the usual, please"* — with no drink specified. You have to remember what they had.
 
 ---
 
