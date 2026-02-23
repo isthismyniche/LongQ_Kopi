@@ -1,18 +1,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import html2canvas from 'html2canvas'
-import QRCode from 'qrcode'
 import { saveScore } from '../../utils/leaderboard'
-import { generateScoreURL } from '../../utils/scoreSignature'
 import { shareScore } from '../../utils/shareScore'
-import { ScoreCardCanvas } from '../results/ScoreCardCanvas'
 
 interface GameOverModalProps {
   score: number
   drinksServed: number
   avgTime: number
-  level: number
-  levelName: string
   onPlayAgain: () => void
   onMainMenu: () => void
 }
@@ -21,16 +16,12 @@ export default function GameOverModal({
   score,
   drinksServed,
   avgTime,
-  level,
-  levelName,
   onPlayAgain,
   onMainMenu,
 }: GameOverModalProps) {
   const [showShareForm, setShowShareForm] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [saved, setSaved] = useState(false)
-  const [signedURL, setSignedURL] = useState('')
-  const [qrDataURL, setQrDataURL] = useState('')
   const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [cardError, setCardError] = useState(false)
   const [generating, setGenerating] = useState(false)
@@ -59,53 +50,32 @@ export default function GameOverModal({
         drinksServed,
         avgTime: avgSeconds,
       })
-
-      const url = await generateScoreURL({
-        name: playerName.trim(),
-        score,
-        drinksServed,
-        avgSeconds,
-        level,
-        datetime,
-      })
-
-      const qr = await QRCode.toDataURL(url, {
-        width: 130,
-        margin: 1,
-        color: { dark: '#5C3D2E', light: '#FFF8E7' },
-      })
-
-      setSignedURL(url)
-      setQrDataURL(qr)
       setSaved(true)
     } catch (err) {
-      console.error('Failed to generate score card:', err)
-      setCardError(true)
-      setSaved(true)
+      console.error('Failed to save score:', err)
+      setSaved(true) // still show card even if save failed
     } finally {
       setGenerating(false)
     }
-  }, [playerName, score, drinksServed, avgSeconds, level, datetime, generating])
+  }, [playerName, score, drinksServed, avgSeconds, datetime, generating])
 
-  // Capture the off-screen ScoreCardCanvas after it renders
+  // Capture the visible card preview after it renders
   useEffect(() => {
-    if (!saved || !signedURL || !qrDataURL || cardBlob || cardError) return
+    if (!saved || cardBlob || cardError) return
 
     let cancelled = false
 
     const capture = async () => {
-      // Double RAF to ensure the DOM is painted before capturing
+      // Double RAF to ensure the card is painted before capturing
       await new Promise<void>(resolve =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       )
-
       if (cancelled || !cardRef.current) return
 
       try {
         const canvas = await html2canvas(cardRef.current, {
           backgroundColor: '#FFF8E7',
           scale: 2,
-          useCORS: true,
           logging: false,
         })
         if (cancelled) return
@@ -127,39 +97,24 @@ export default function GameOverModal({
     return () => {
       cancelled = true
     }
-  }, [saved, signedURL, qrDataURL, cardBlob, cardError])
+  }, [saved, cardBlob, cardError])
 
-  const handleDownload = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (!cardBlob) return
-    const url = URL.createObjectURL(cardBlob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `longq-kopi-${score}pts.png`
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 60_000)
-  }, [cardBlob, score])
-
-  const handleShare = useCallback(
-    async (platform: 'whatsapp' | 'telegram') => {
-      if (!cardBlob || !signedURL) return
-      await shareScore(
-        platform,
-        {
-          name: playerName.trim(),
-          score,
-          drinksServed,
-          avgSeconds,
-          signedURL,
-          cardImageBlob: cardBlob,
-        },
-        () => {
-          setShowTooltip(true)
-          setTimeout(() => setShowTooltip(false), 4000)
-        },
-      )
-    },
-    [cardBlob, signedURL, playerName, score, drinksServed, avgSeconds],
-  )
+    await shareScore(
+      {
+        name: playerName.trim(),
+        score,
+        drinksServed,
+        avgSeconds,
+        cardImageBlob: cardBlob,
+      },
+      () => {
+        setShowTooltip(true)
+        setTimeout(() => setShowTooltip(false), 4000)
+      },
+    )
+  }, [cardBlob, playerName, score, drinksServed, avgSeconds])
 
   const cardReady = cardBlob !== null
 
@@ -170,23 +125,6 @@ export default function GameOverModal({
       exit={{ opacity: 0 }}
       className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
     >
-      {/* Off-screen 800×500 card for html2canvas capture */}
-      {saved && signedURL && qrDataURL && (
-        <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', zIndex: -1 }}>
-          <ScoreCardCanvas
-            ref={cardRef}
-            name={playerName.trim()}
-            score={score}
-            drinksServed={drinksServed}
-            avgSeconds={avgSeconds}
-            level={level}
-            levelName={levelName}
-            formattedDate={formattedDate}
-            qrDataURL={qrDataURL}
-          />
-        </div>
-      )}
-
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -279,8 +217,9 @@ export default function GameOverModal({
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Visible card preview */}
+                {/* Visible card — this is also what gets captured by html2canvas */}
                 <div
+                  ref={cardRef}
                   style={{
                     width: 300,
                     backgroundColor: '#FFF8E7',
@@ -292,7 +231,7 @@ export default function GameOverModal({
                   }}
                 >
                   <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 20, fontWeight: 700, color: '#5C3D2E', margin: 0 }}>LongQ Kopi</p>
+                    <p style={{ fontSize: 20, fontWeight: 700, color: '#5C3D2E', margin: 0 }}>LongQ Kopi ☕</p>
                     <div style={{ margin: '12px 0' }}>
                       <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{playerName.trim()}</p>
                       <p style={{ fontSize: 48, fontWeight: 700, color: '#C41E3A', margin: '4px 0' }}>{score}</p>
@@ -329,48 +268,34 @@ export default function GameOverModal({
                   <p className="text-xs text-kopi-brown/50 text-center">Generating card…</p>
                 )}
 
-                {/* Download button */}
+                {/* Share button */}
                 <button
-                  onClick={handleDownload}
+                  onClick={handleShare}
                   disabled={!cardReady}
-                  className="w-full px-4 py-2 rounded-xl bg-kopi-brown text-white
-                    font-display font-bold cursor-pointer transition-colors hover:bg-kopi-brown/90
-                    disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Share score"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
+                    bg-kopi-brown hover:bg-kopi-brown/90 text-white font-display font-bold
+                    cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Download
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                  Share
                 </button>
 
-                {/* WhatsApp + Telegram share buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleShare('whatsapp')}
-                    disabled={!cardReady}
-                    aria-label="Share on WhatsApp"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
-                      bg-[#25D366] hover:bg-[#1db954] text-white font-display font-bold text-sm
-                      cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
-                    WhatsApp
-                  </button>
-                  <button
-                    onClick={() => handleShare('telegram')}
-                    disabled={!cardReady}
-                    aria-label="Share on Telegram"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl
-                      bg-[#0088CC] hover:bg-[#0077bb] text-white font-display font-bold text-sm
-                      cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-                    </svg>
-                    Telegram
-                  </button>
-                </div>
-
-                {/* Desktop fallback tooltip */}
+                {/* Clipboard fallback tooltip */}
                 <AnimatePresence>
                   {showTooltip && (
                     <motion.p
@@ -380,7 +305,7 @@ export default function GameOverModal({
                       transition={{ duration: 0.2 }}
                       className="text-xs text-center px-3 py-2 rounded-lg bg-kopi-brown/10 text-kopi-brown/70 font-body"
                     >
-                      Image downloaded! Paste it into your chat along with the link.
+                      Copied to clipboard! Paste into WhatsApp, Telegram, or any chat.
                     </motion.p>
                   )}
                 </AnimatePresence>
