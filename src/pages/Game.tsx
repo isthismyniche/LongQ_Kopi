@@ -10,6 +10,7 @@ import LevelTransition from '../components/game/LevelTransition'
 import ErrorExplanation from '../components/game/ErrorExplanation'
 import { useGameState } from '../hooks/useGameState'
 import { useSounds } from '../hooks/useSounds'
+import { useMusicManager } from '../hooks/useMusicManager'
 import { loadSettings } from './Settings'
 import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
 
@@ -17,6 +18,8 @@ export default function Game() {
   const navigate = useNavigate()
   const game = useGameState()
   const sounds = useSounds()
+  const [soundEnabled] = useState(() => loadSettings().soundEnabled)
+  const { setMusicState, play, stop, duck, unduck } = useMusicManager(soundEnabled)
   const prevPhaseRef = useRef(game.phase)
   const prevResultRef = useRef(game.orderResult)
   const [showQuitModal, setShowQuitModal] = useState(false)
@@ -43,11 +46,32 @@ export default function Game() {
   }, [game.orderResult, sounds])
 
   useEffect(() => {
-    if (game.phase === 'gameover' && prevPhaseRef.current !== 'gameover') {
+    const prev = prevPhaseRef.current
+
+    if (game.phase === 'gameover' && prev !== 'gameover') {
       sounds.playGameOver()
+      stop()
     }
+    if (game.phase === 'playing' && (prev === 'idle' || prev === 'gameover')) {
+      play()
+    }
+    if (game.phase === 'levelup') {
+      duck()
+    }
+    if (prev === 'levelup' && game.phase === 'playing') {
+      unduck()
+      setMusicState(game.level.level as 1|2|3|4|5, game.lives === 1)
+    }
+
     prevPhaseRef.current = game.phase
-  }, [game.phase, sounds])
+  }, [game.phase, game.level.level, game.lives, sounds, play, stop, duck, unduck, setMusicState])
+
+  // Crossfade to danger track when lives drop to 1
+  useEffect(() => {
+    if (game.phase === 'playing' && game.lives === 1) {
+      setMusicState(game.level.level as 1|2|3|4|5, true)
+    }
+  }, [game.lives, game.phase, game.level.level, setMusicState])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -108,8 +132,9 @@ export default function Game() {
 
   const handleQuitConfirm = useCallback(() => {
     setShowQuitModal(false)
+    stop(500)
     navigate('/')
-  }, [navigate])
+  }, [navigate, stop])
 
   if (game.phase === 'idle') {
     return (
