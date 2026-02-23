@@ -51,7 +51,7 @@ function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSup
         </button>
       </div>
 
-      <div className="space-y-4 text-sm text-kopi-brown/70 font-body leading-relaxed">
+      <div className="overflow-y-auto max-h-[65vh] space-y-4 text-sm text-kopi-brown/70 font-body leading-relaxed pr-1">
         <div>
           <h3 className="font-display font-bold text-kopi-brown mb-1">Why I Built This</h3>
           <p>
@@ -70,7 +70,8 @@ function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSup
         <div>
           <h3 className="font-display font-bold text-kopi-brown mb-1">How It Works</h3>
           <p>
-            This game was built with{' '}
+            The product requirements came from me — the game design, content, and vision.
+            The code was written by{' '}
             <a
               href="https://claude.ai/code"
               target="_blank"
@@ -79,17 +80,13 @@ function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSup
             >
               Claude Code
             </a>
-            {' '}— Anthropic's AI coding assistant. Think of it like pair programming with an AI:
-            I described what I wanted, and we worked through the implementation together.
+            , Anthropic's AI coding assistant.
           </p>
           <p className="mt-2">
-            Under the hood: <strong className="text-kopi-brown/90">React + TypeScript</strong> for
-            the UI, <strong className="text-kopi-brown/90">Vite</strong> for bundling,{' '}
-            <strong className="text-kopi-brown/90">Framer Motion</strong> for animations, and
-            deployed on <strong className="text-kopi-brown/90">Vercel</strong>. Scores are saved
-            to a <strong className="text-kopi-brown/90">Supabase</strong> database. The shareable
-            score card is generated in the browser using{' '}
-            <strong className="text-kopi-brown/90">html2canvas</strong>.
+            There's a small backend: scores are saved to a{' '}
+            <strong className="text-kopi-brown/90">Supabase</strong> database, and
+            contributions go through <strong className="text-kopi-brown/90">Stripe</strong>.
+            The rest runs entirely in the browser.
           </p>
         </div>
 
