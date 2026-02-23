@@ -61,7 +61,7 @@ export default function Leaderboard() {
                     <th className="px-3 py-2 text-center font-display">Score</th>
                     <th className="px-3 py-2 text-center font-display">Drinks</th>
                     <th className="px-3 py-2 text-center font-display">Avg</th>
-                    <th className="px-3 py-2 text-right font-display">Date</th>
+                    <th className="px-3 py-2 text-center font-display">Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -77,7 +77,7 @@ export default function Leaderboard() {
                       <td className="px-3 py-2 text-center font-bold text-hawker-red">{entry.score}</td>
                       <td className="px-3 py-2 text-center text-kopi-brown/70">{entry.drinksServed ?? '—'}</td>
                       <td className="px-3 py-2 text-center text-kopi-brown/70">{entry.avgTime != null ? `${entry.avgTime}s` : '—'}</td>
-                      <td className="px-3 py-2 text-right text-kopi-brown/60 text-xs">
+                      <td className="px-3 py-2 text-center text-kopi-brown/60 text-xs">
                         {formatDate(entry.datetime)}
                       </td>
                     </tr>

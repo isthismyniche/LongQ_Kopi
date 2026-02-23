@@ -83,10 +83,14 @@ function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSup
             , Anthropic's AI coding assistant.
           </p>
           <p className="mt-2">
-            There's a small backend: scores are saved to a{' '}
-            <strong className="text-kopi-brown/90">Supabase</strong> database, and
-            contributions go through <strong className="text-kopi-brown/90">Stripe</strong>.
-            The rest runs entirely in the browser.
+            The frontend is built with <strong className="text-kopi-brown/90">React + TypeScript</strong>,
+            bundled with <strong className="text-kopi-brown/90">Vite</strong>, animated with{' '}
+            <strong className="text-kopi-brown/90">Framer Motion</strong>, and deployed on{' '}
+            <strong className="text-kopi-brown/90">Vercel</strong>. On the backend,{' '}
+            <strong className="text-kopi-brown/90">Supabase</strong> stores leaderboard scores
+            and <strong className="text-kopi-brown/90">Stripe</strong> handles contributions.
+            The shareable score card is generated in-browser using{' '}
+            <strong className="text-kopi-brown/90">html2canvas</strong>.
           </p>
         </div>
 
@@ -125,7 +129,7 @@ function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSup
           </p>
         </div>
 
-        <p className="text-xs text-kopi-brown/40 pt-1">— Manish</p>
+        <p className="text-xs text-kopi-brown/40 pt-1">— Manish (February 2026)</p>
       </div>
     </Modal>
   )
@@ -359,9 +363,6 @@ export default function Landing() {
         </button>
       </motion.div>
 
-      <p className="absolute bottom-6 text-sm text-kopi-brown/40 font-body">
-        A Singapore Hawker Stall Drink Game
-      </p>
 
       {/* Modals */}
       <AnimatePresence>
