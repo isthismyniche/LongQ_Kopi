@@ -8,14 +8,31 @@ interface GameOverModalProps {
   score: number
   drinksServed: number
   avgTime: number
+  level: number
+  levelName: string
   onPlayAgain: () => void
   onMainMenu: () => void
+}
+
+const LEVEL_THEMES: Record<number, {
+  accent: string
+  border: string
+  badgeBg: string
+  emoji: string
+}> = {
+  1: { accent: '#C41E3A', border: 'rgba(196,30,58,0.22)',   badgeBg: 'rgba(196,30,58,0.08)',  emoji: '☀️' },
+  2: { accent: '#D4751E', border: 'rgba(212,117,30,0.22)',  badgeBg: 'rgba(212,117,30,0.08)', emoji: '🌅' },
+  3: { accent: '#B8860B', border: 'rgba(184,134,11,0.22)',  badgeBg: 'rgba(184,134,11,0.08)', emoji: '🌞' },
+  4: { accent: '#7B3FA0', border: 'rgba(123,63,160,0.22)',  badgeBg: 'rgba(123,63,160,0.08)', emoji: '🍵' },
+  5: { accent: '#1E3A6E', border: 'rgba(30,58,110,0.22)',   badgeBg: 'rgba(30,58,110,0.08)',  emoji: '🌙' },
 }
 
 export default function GameOverModal({
   score,
   drinksServed,
   avgTime,
+  level,
+  levelName,
   onPlayAgain,
   onMainMenu,
 }: GameOverModalProps) {
@@ -28,6 +45,8 @@ export default function GameOverModal({
   const [showTooltip, setShowTooltip] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const datetime = useRef(new Date().toISOString()).current
+
+  const theme = LEVEL_THEMES[level] ?? LEVEL_THEMES[1]
 
   const formattedDate = new Date(datetime).toLocaleDateString('en-SG', {
     day: 'numeric',
@@ -53,7 +72,7 @@ export default function GameOverModal({
       setSaved(true)
     } catch (err) {
       console.error('Failed to save score:', err)
-      setSaved(true) // still show card even if save failed
+      setSaved(true)
     } finally {
       setGenerating(false)
     }
@@ -66,7 +85,6 @@ export default function GameOverModal({
     let cancelled = false
 
     const capture = async () => {
-      // Double RAF to ensure the card is painted before capturing
       await new Promise<void>(resolve =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       )
@@ -178,7 +196,9 @@ export default function GameOverModal({
         ) : (
           /* Share form */
           <div className="text-center">
-            <h3 className="font-display text-2xl font-bold text-kopi-brown mb-2">Share Your Score</h3>
+            <h3 className="font-display text-2xl font-bold mb-2" style={{ color: theme.accent }}>
+              Share Your Score
+            </h3>
 
             {!saved ? (
               <div className="space-y-4">
@@ -207,9 +227,10 @@ export default function GameOverModal({
                   <button
                     onClick={handleSaveAndGenerate}
                     disabled={!playerName.trim() || generating}
-                    className="flex-1 px-4 py-2 rounded-xl bg-hawker-red text-white
-                      font-display font-bold cursor-pointer transition-colors hover:bg-hawker-red/90
+                    className="flex-1 px-4 py-2 rounded-xl text-white
+                      font-display font-bold cursor-pointer transition-opacity
                       disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: theme.accent }}
                   >
                     {generating ? 'Saving…' : 'Save & Share'}
                   </button>
@@ -217,44 +238,64 @@ export default function GameOverModal({
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Visible card — this is also what gets captured by html2canvas */}
+                {/* Score card — this exact div is captured by html2canvas */}
                 <div
                   ref={cardRef}
                   style={{
                     width: 300,
                     backgroundColor: '#FFF8E7',
                     borderRadius: 16,
-                    padding: 24,
-                    border: '2px solid rgba(92, 61, 46, 0.2)',
+                    border: `2px solid ${theme.border}`,
                     margin: '0 auto',
                     fontFamily: '"Fredoka", sans-serif',
+                    overflow: 'hidden',
                   }}
                 >
-                  <div style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 20, fontWeight: 700, color: '#5C3D2E', margin: 0 }}>LongQ Kopi ☕</p>
-                    <div style={{ margin: '12px 0' }}>
-                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{playerName.trim()}</p>
-                      <p style={{ fontSize: 48, fontWeight: 700, color: '#C41E3A', margin: '4px 0' }}>{score}</p>
-                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
+                  {/* Accent stripe */}
+                  <div style={{ height: 5, backgroundColor: theme.accent }} />
+
+                  <div style={{ padding: 20, textAlign: 'center' }}>
+                    {/* Level badge */}
+                    <div style={{
+                      display: 'inline-block',
+                      backgroundColor: theme.badgeBg,
+                      borderRadius: 20,
+                      padding: '3px 10px',
+                      marginBottom: 10,
+                    }}>
+                      <span style={{ fontSize: 11, color: theme.accent, fontWeight: 600 }}>
+                        {theme.emoji} {levelName}
+                      </span>
                     </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: 12,
-                        margin: '8px 0',
-                        color: 'rgba(92, 61, 46, 0.6)',
-                      }}
-                    >
+
+                    {/* Logo */}
+                    <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
+
+                    {/* Player name */}
+                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{playerName.trim()}</p>
+
+                    {/* Score */}
+                    <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{score}</p>
+                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
+
+                    {/* Stats */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      gap: 12,
+                      margin: '10px 0',
+                      color: 'rgba(92, 61, 46, 0.6)',
+                    }}>
                       <span style={{ fontSize: 12 }}>{drinksServed} drinks</span>
                       <span style={{ fontSize: 12 }}>|</span>
                       <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
                     </div>
+
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>
                       Can you beat my score?
                     </p>
-                    <p style={{ fontSize: 11, color: '#C41E3A', margin: '8px 0 0', fontWeight: 600 }}>
+                    <p style={{ fontSize: 11, color: theme.accent, margin: '8px 0 0', fontWeight: 600 }}>
                       longqkopi.vercel.app
                     </p>
                   </div>
@@ -268,14 +309,15 @@ export default function GameOverModal({
                   <p className="text-xs text-kopi-brown/50 text-center">Generating card…</p>
                 )}
 
-                {/* Share button */}
+                {/* Share button — themed to level */}
                 <button
                   onClick={handleShare}
                   disabled={!cardReady}
                   aria-label="Share score"
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-                    bg-kopi-brown hover:bg-kopi-brown/90 text-white font-display font-bold
-                    cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    text-white font-display font-bold cursor-pointer transition-opacity
+                    disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: cardReady ? theme.accent : undefined }}
                 >
                   <svg
                     width="16"
@@ -314,8 +356,9 @@ export default function GameOverModal({
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={onPlayAgain}
-                    className="flex-1 px-4 py-2 rounded-xl bg-hawker-red text-white
-                      font-display font-bold cursor-pointer transition-colors hover:bg-hawker-red/90"
+                    className="flex-1 px-4 py-2 rounded-xl text-white
+                      font-display font-bold cursor-pointer transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: theme.accent }}
                   >
                     Play Again
                   </button>

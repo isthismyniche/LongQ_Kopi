@@ -14,7 +14,7 @@ export async function shareScore(
 ): Promise<void> {
   const shareText =
     `${payload.name} scored ${payload.score} points in LongQ Kopi! ` +
-    `They served ${payload.drinksServed} drinks taking ${payload.avgSeconds.toFixed(1)}s per drink on average. ` +
+    `They served ${payload.drinksServed} drinks taking ${payload.avgSeconds.toFixed(1)}s per drink on average.\n\n` +
     `Can you beat them? Tap to play 👉 ${GAME_URL}`
 
   const imageFile = new File([payload.cardImageBlob], 'longq-score.png', { type: 'image/png' })

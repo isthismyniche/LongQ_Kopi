@@ -236,6 +236,8 @@ export default function Game() {
             score={game.score}
             drinksServed={game.drinksServed}
             avgTime={game.avgTime}
+            level={game.level.level}
+            levelName={game.level.name}
             onPlayAgain={() => game.startGame()}
             onMainMenu={() => navigate('/')}
           />
