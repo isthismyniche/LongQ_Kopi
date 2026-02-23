@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-kopi-brown: #5C3D2E;
+  --color-kopi-light: #8B6914;
+  --color-warm-yellow: #F5C542;
+  --color-cream: #FFF8E7;
+  --color-cream-dark: #E8D5B7;
+  --color-hawker-red: #C41E3A;
+  --color-hawker-green: #2D5A27;
+  --color-condensed: #F5E6C8;
+  --color-evaporated: #FDF0D5;
+  --color-teh-amber: #B8860B;
+
+  --font-display: 'Fredoka', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-cream);
+  color: var(--color-kopi-brown);
+  overflow: hidden;
+}
+
+#root {
+  width: 100vw;
+  height: 100dvh;
+}
