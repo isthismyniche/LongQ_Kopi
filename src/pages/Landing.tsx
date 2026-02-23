@@ -10,36 +10,6 @@ const menuButtons = [
   { label: 'Settings', path: '/settings', color: 'bg-kopi-brown/70 hover:bg-kopi-brown/80' },
 ]
 
-const DONATION_AMOUNTS = [3, 6, 12] as const
-type DonationAmount = (typeof DONATION_AMOUNTS)[number]
-
-const stripeLinks: Record<DonationAmount, string> = {
-  3: import.meta.env.VITE_STRIPE_LINK_3 ?? '',
-  6: import.meta.env.VITE_STRIPE_LINK_6 ?? '',
-  12: import.meta.env.VITE_STRIPE_LINK_12 ?? '',
-}
-const stripeConfigured = Object.values(stripeLinks).every(Boolean)
-
-// ── Icon buttons ──────────────────────────────────────────────────────────────
-
-function IconButton({ onClick, label, children }: {
-  onClick: () => void
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className="w-9 h-9 rounded-full bg-kopi-brown/10 hover:bg-kopi-brown/20
-        flex items-center justify-center text-kopi-brown/60 hover:text-kopi-brown
-        transition-all cursor-pointer shadow-sm"
-    >
-      {children}
-    </button>
-  )
-}
-
 // ── Modal wrapper ─────────────────────────────────────────────────────────────
 
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
@@ -67,7 +37,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
 
 // ── About modal ───────────────────────────────────────────────────────────────
 
-function AboutModal({ onClose }: { onClose: () => void }) {
+function AboutModal({ onClose, onOpenSupport }: { onClose: () => void; onOpenSupport: () => void }) {
   return (
     <Modal onClose={onClose}>
       <div className="flex items-start justify-between mb-4">
@@ -91,25 +61,51 @@ function AboutModal({ onClose }: { onClose: () => void }) {
             and even some Singaporeans haven't explored all the intricacies!
           </p>
           <p className="mt-2">
-            LongQ Kopi started as a way to make that discovery faster and more fun. By
-            taking orders under pressure, you quickly learn what goes into each drink —
-            experiment, make mistakes, and come back for more. ☕
+            LongQ Kopi started as a way to make that discovery faster and more fun. By taking
+            orders under pressure, you quickly learn what goes into each drink — experiment,
+            make mistakes, and come back for more. ☕
           </p>
         </div>
 
         <div>
           <h3 className="font-display font-bold text-kopi-brown mb-1">How It Works</h3>
           <p>
-            Customers queue up and place orders using Singapore's local coffee vocabulary.
-            Prepare each drink correctly before the timer runs out — a wrong order or
-            timeout costs a life. The queue grows longer and faster as you level up
-            through Morning Shift all the way to Supper Crowd.
+            This game was built with{' '}
+            <a
+              href="https://claude.ai/code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-kopi-brown underline underline-offset-2 hover:text-hawker-red transition-colors"
+            >
+              Claude Code
+            </a>
+            {' '}— Anthropic's AI coding assistant. Think of it like pair programming with an AI:
+            I described what I wanted, and we worked through the implementation together.
+          </p>
+          <p className="mt-2">
+            Under the hood: <strong className="text-kopi-brown/90">React + TypeScript</strong> for
+            the UI, <strong className="text-kopi-brown/90">Vite</strong> for bundling,{' '}
+            <strong className="text-kopi-brown/90">Framer Motion</strong> for animations, and
+            deployed on <strong className="text-kopi-brown/90">Vercel</strong>. Scores are saved
+            to a <strong className="text-kopi-brown/90">Supabase</strong> database. The shareable
+            score card is generated in the browser using{' '}
+            <strong className="text-kopi-brown/90">html2canvas</strong>.
           </p>
         </div>
 
         <div>
           <h3 className="font-display font-bold text-kopi-brown mb-1">Reach Out</h3>
           <p>
+            I hope you enjoyed this game! If you did, consider{' '}
+            <button
+              onClick={() => { onClose(); onOpenSupport() }}
+              className="text-kopi-brown underline underline-offset-2 hover:text-hawker-red transition-colors cursor-pointer"
+            >
+              supporting this project
+            </button>
+            .
+          </p>
+          <p className="mt-2">
             Want to see how it's built?{' '}
             <a
               href="https://github.com/isthismyniche/LongQ_Kopi"
@@ -117,7 +113,17 @@ function AboutModal({ onClose }: { onClose: () => void }) {
               rel="noopener noreferrer"
               className="text-kopi-brown underline underline-offset-2 hover:text-hawker-red transition-colors"
             >
-              Code on GitHub.
+              Check out the code on GitHub.
+            </a>
+          </p>
+          <p className="mt-2">
+            <a
+              href="https://www.linkedin.com/in/manishnair92/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-kopi-brown underline underline-offset-2 hover:text-hawker-red transition-colors"
+            >
+              Connect with me on LinkedIn.
             </a>
           </p>
         </div>
@@ -130,12 +136,40 @@ function AboutModal({ onClose }: { onClose: () => void }) {
 
 // ── Support modal ─────────────────────────────────────────────────────────────
 
-function SupportModal({ onClose }: { onClose: () => void }) {
-  const [selected, setSelected] = useState<DonationAmount>(6)
+const QUICK_AMOUNTS = [3, 6, 12] as const
 
-  const handleSupport = () => {
-    const url = stripeLinks[selected]
-    if (url) window.location.href = url
+function SupportModal({ onClose }: { onClose: () => void }) {
+  const [inputValue, setInputValue] = useState('6')
+  const [loading, setLoading] = useState(false)
+  const [apiError, setApiError] = useState(false)
+
+  const numericAmount = parseFloat(inputValue)
+  const isValid = !isNaN(numericAmount) && numericAmount >= 1
+  const displayAmount = isValid ? numericAmount.toFixed(2) : '0.00'
+  const amountCents = isValid ? Math.round(numericAmount * 100) : 0
+
+  const handleQuickSelect = (amount: number) => {
+    setInputValue(String(amount))
+    setApiError(false)
+  }
+
+  const handleDonate = async () => {
+    if (!isValid || loading) return
+    setLoading(true)
+    setApiError(false)
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents }),
+      })
+      if (!res.ok) throw new Error('API error')
+      const { url } = await res.json() as { url: string }
+      window.location.href = url
+    } catch {
+      setApiError(true)
+      setLoading(false)
+    }
   }
 
   return (
@@ -153,43 +187,62 @@ function SupportModal({ onClose }: { onClose: () => void }) {
 
       <p className="text-sm text-kopi-brown/70 font-body leading-relaxed mb-5">
         This tool is free to use, and is my little gift to the world. If it helped you,
-        consider buying me a coffee!
+        consider buying me a coffee! ☕
       </p>
 
-      {/* Amount selector */}
-      <div className="flex gap-2 mb-5">
-        {DONATION_AMOUNTS.map(amount => (
+      {/* Quick-select pills */}
+      <div className="flex gap-2 mb-3">
+        {QUICK_AMOUNTS.map(amount => (
           <button
             key={amount}
-            onClick={() => setSelected(amount)}
-            className={`flex-1 py-2.5 rounded-xl font-display font-bold text-sm cursor-pointer
+            onClick={() => handleQuickSelect(amount)}
+            className={`flex-1 py-2 rounded-xl font-display font-bold text-sm cursor-pointer
               transition-all border-2 ${
-                selected === amount
-                  ? 'bg-kopi-brown text-white border-kopi-brown scale-105 shadow-md'
+                inputValue === String(amount)
+                  ? 'bg-kopi-brown text-white border-kopi-brown shadow-md'
                   : 'bg-transparent text-kopi-brown border-kopi-brown/25 hover:border-kopi-brown/50'
               }`}
           >
-            {amount === 6 && selected !== 6 ? (
-              <span>S${amount}</span>
-            ) : (
-              `S$${amount}`
+            S${amount}
+            {amount === 6 && (
+              <div className="text-[9px] opacity-70 font-body font-normal leading-tight">popular</div>
             )}
-            {amount === 6 && <div className="text-[10px] opacity-70 font-body font-normal leading-none mt-0.5">popular</div>}
           </button>
         ))}
       </div>
 
-      {stripeConfigured ? (
-        <button
-          onClick={handleSupport}
-          className="w-full px-4 py-3 rounded-2xl bg-hawker-red hover:bg-hawker-red/90
-            text-white font-display font-bold text-lg shadow-lg cursor-pointer transition-colors"
-        >
-          Buy me a coffee ☕
-        </button>
-      ) : (
-        <p className="text-xs text-center text-kopi-brown/40 font-body">
-          Donations coming soon — check back shortly!
+      {/* Custom amount input */}
+      <div className="relative mb-4">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-kopi-brown/50 font-body text-sm select-none">
+          S$
+        </span>
+        <input
+          type="number"
+          min="1"
+          step="any"
+          value={inputValue}
+          onChange={e => { setInputValue(e.target.value); setApiError(false) }}
+          placeholder="0"
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-kopi-brown/20 bg-white
+            font-body text-kopi-brown text-base focus:outline-none focus:border-kopi-brown/50
+            [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        />
+      </div>
+
+      {/* Donate button */}
+      <button
+        onClick={handleDonate}
+        disabled={!isValid || loading}
+        className="w-full px-4 py-3 rounded-2xl bg-hawker-red hover:bg-hawker-red/90
+          text-white font-display font-bold text-lg shadow-lg cursor-pointer transition-colors
+          disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {loading ? 'Redirecting…' : `Donate S$${displayAmount}`}
+      </button>
+
+      {apiError && (
+        <p className="text-xs text-hawker-red/80 text-center mt-2 font-body">
+          Something went wrong — please try again.
         </p>
       )}
     </Modal>
@@ -217,32 +270,9 @@ export default function Landing() {
         ))}
       </div>
 
-      {/* Top-right icon buttons */}
-      <motion.div
-        className="absolute top-4 right-4 flex gap-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        <IconButton onClick={() => setShowAbout(true)} label="About">
-          {/* Info icon */}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="3" />
-          </svg>
-        </IconButton>
-        <IconButton onClick={() => setShowSupport(true)} label="Support this project">
-          {/* Heart icon */}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </IconButton>
-      </motion.div>
-
       {/* Logo / Title */}
       <motion.div
-        className="text-center mb-12"
+        className="text-center mb-10"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, type: 'spring' }}
@@ -255,19 +285,13 @@ export default function Landing() {
             <path d="M80 44 Q96 44 96 64 Q96 84 80 84" stroke="#5C3D2E" strokeWidth="6" fill="none" />
             <motion.path
               d="M36 20 Q40 10 36 0"
-              stroke="#5C3D2E"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.4"
+              stroke="#5C3D2E" strokeWidth="2" fill="none" opacity="0.4"
               animate={{ y: [-2, -6, -2] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             />
             <motion.path
               d="M52 20 Q56 10 52 0"
-              stroke="#5C3D2E"
-              strokeWidth="2"
-              fill="none"
-              opacity="0.4"
+              stroke="#5C3D2E" strokeWidth="2" fill="none" opacity="0.4"
               animate={{ y: [-2, -6, -2] }}
               transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
             />
@@ -282,7 +306,7 @@ export default function Landing() {
       </motion.div>
 
       {/* Menu Buttons */}
-      <div className="flex flex-col gap-3 w-64">
+      <div className="flex flex-col gap-3 w-64 mb-8">
         {menuButtons.map((btn, i) => (
           <motion.button
             key={btn.path}
@@ -298,13 +322,58 @@ export default function Landing() {
         ))}
       </div>
 
+      {/* About & Support icon buttons — centred below menu */}
+      <motion.div
+        className="flex gap-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+      >
+        <button
+          onClick={() => setShowAbout(true)}
+          aria-label="About"
+          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+        >
+          <div className="w-11 h-11 rounded-full bg-kopi-brown/10 group-hover:bg-kopi-brown/20
+            flex items-center justify-center text-kopi-brown/55 group-hover:text-kopi-brown
+            transition-all shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" strokeWidth="3" />
+            </svg>
+          </div>
+          <span className="text-xs text-kopi-brown/50 font-body group-hover:text-kopi-brown/70 transition-colors">About</span>
+        </button>
+
+        <button
+          onClick={() => setShowSupport(true)}
+          aria-label="Support this project"
+          className="flex flex-col items-center gap-1.5 cursor-pointer group"
+        >
+          <div className="w-11 h-11 rounded-full bg-kopi-brown/10 group-hover:bg-kopi-brown/20
+            flex items-center justify-center text-kopi-brown/55 group-hover:text-kopi-brown
+            transition-all shadow-sm">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </div>
+          <span className="text-xs text-kopi-brown/50 font-body group-hover:text-kopi-brown/70 transition-colors">Support</span>
+        </button>
+      </motion.div>
+
       <p className="absolute bottom-6 text-sm text-kopi-brown/40 font-body">
         A Singapore Hawker Stall Drink Game
       </p>
 
       {/* Modals */}
       <AnimatePresence>
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+        {showAbout && (
+          <AboutModal
+            onClose={() => setShowAbout(false)}
+            onOpenSupport={() => { setShowAbout(false); setShowSupport(true) }}
+          />
+        )}
       </AnimatePresence>
       <AnimatePresence>
         {showSupport && <SupportModal onClose={() => setShowSupport(false)} />}
