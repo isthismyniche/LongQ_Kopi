@@ -96,6 +96,7 @@ export default function Game() {
         case 'teh': game.addBase('Teh'); sounds.playClick(); break
         case 'lessBase': game.toggleLess(); sounds.playClick(); break
         case 'condensedMilk': game.setMilk('Condensed'); sounds.playClick(); break
+        case 'lessCondensed': game.toggleCondensedLess(); sounds.playClick(); break
         case 'evaporatedMilk': game.setMilk('Evaporated'); sounds.playClick(); break
         case 'sugar': game.addSugar(); sounds.playClick(); break
         case 'lessSugar': game.toggleSugarLess(); sounds.playClick(); break
@@ -191,10 +192,12 @@ export default function Game() {
           cup={game.cup}
           lessToggle={game.lessToggle}
           sugarLessToggle={game.sugarLessToggle}
+          condensedLessToggle={game.condensedLessToggle}
           shortcuts={shortcuts}
           onAddBase={withClick(game.addBase)}
           onToggleLess={withClick(game.toggleLess)}
           onSetMilk={withClick(game.setMilk)}
+          onToggleCondensedLess={withClick(game.toggleCondensedLess)}
           onAddSugar={withClick(game.addSugar)}
           onToggleSugarLess={withClick(game.toggleSugarLess)}
           onAddIce={withClick(game.addIce)}

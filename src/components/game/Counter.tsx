@@ -8,10 +8,12 @@ interface CounterProps {
   cup: CupContents
   lessToggle: boolean
   sugarLessToggle: boolean
+  condensedLessToggle: boolean
   shortcuts: ShortcutEntry[]
   onAddBase: (base: 'Kopi' | 'Teh') => void
   onToggleLess: () => void
   onSetMilk: (milk: MilkType) => void
+  onToggleCondensedLess: () => void
   onAddSugar: () => void
   onToggleSugarLess: () => void
   onAddIce: () => void
@@ -256,10 +258,12 @@ export default function Counter({
   cup,
   lessToggle,
   sugarLessToggle,
+  condensedLessToggle,
   shortcuts,
   onAddBase,
   onToggleLess,
   onSetMilk,
+  onToggleCondensedLess,
   onAddSugar,
   onToggleSugarLess,
   onAddIce,
@@ -332,7 +336,7 @@ export default function Counter({
             )}
             {cup.milk !== 'None' && (
               <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] text-cream/70 font-semibold">
-                {cup.milk}
+                {cup.milk === 'Condensed' && cup.milkUnits === 0.5 ? 'Condensed (½)' : cup.milk}
               </span>
             )}
             {cup.sugar !== 'None' && (
@@ -351,16 +355,25 @@ export default function Counter({
 
         {/* Right: Ingredients */}
         <div className="flex flex-col gap-1.5 items-center">
-          <div className="flex gap-1">
-            <IconButton
-              onClick={() => onSetMilk('Condensed')}
-              icon={<CondensedCanIcon />}
-              label="Condensed"
-              className={cup.milk === 'Condensed' ? 'bg-condensed text-kopi-brown ring-2 ring-kopi-brown' : 'bg-condensed text-kopi-brown'}
-              disabled={disabled || cup.milk !== 'None'}
-              ariaLabel="Add condensed milk"
-              shortcut={getKey(shortcuts, 'condensedMilk')}
-            />
+          <div className="flex gap-1 items-end">
+            <div className="flex flex-col items-center gap-0.5">
+              <IconButton
+                onClick={() => onSetMilk('Condensed')}
+                icon={<CondensedCanIcon />}
+                label={condensedLessToggle ? 'Condensed (½)' : 'Condensed'}
+                className={cup.milk === 'Condensed' ? 'bg-condensed text-kopi-brown ring-2 ring-kopi-brown' : 'bg-condensed text-kopi-brown'}
+                disabled={disabled || cup.milk !== 'None'}
+                ariaLabel="Add condensed milk"
+                shortcut={getKey(shortcuts, 'condensedMilk')}
+              />
+              <LessButton
+                onClick={onToggleCondensedLess}
+                active={condensedLessToggle}
+                disabled={disabled || cup.milk !== 'None'}
+                ariaLabel="Toggle less for condensed milk"
+                shortcut={getKey(shortcuts, 'lessCondensed')}
+              />
+            </div>
             <IconButton
               onClick={() => onSetMilk('Evaporated')}
               icon={<EvaporatedCanIcon />}

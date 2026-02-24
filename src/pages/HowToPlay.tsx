@@ -69,12 +69,15 @@ export default function HowToPlay() {
               <li><strong>Po</strong> — lighter, half-strength base (0.5 units)</li>
               <li><strong>Gau</strong> — extra strong (2 units of base)</li>
               <li><strong>Di Lo</strong> — extra extra strong (3 units of base, no hot water needed)</li>
-              <li><strong>Siu Dai</strong> — less sweet (half sugar)</li>
+              <li><strong>Siu Dai</strong> — less sweet. For condensed milk drinks, use the <strong>Less</strong> toggle on the condensed milk button (½ unit). For O or C drinks, use the <strong>Less</strong> toggle on sugar (half sugar).</li>
               <li><strong>Kosong</strong> — no sugar</li>
               <li><strong>O</strong> — no milk</li>
               <li><strong>C</strong> — evaporated milk instead of condensed</li>
               <li><strong>Peng</strong> — iced</li>
             </ul>
+            <p className="text-kopi-brown/50 text-sm mt-2">
+              Note: kopi and teh with condensed milk are naturally sweet — sugar is optional and any amount is accepted.
+            </p>
           </div>
         </div>
 
@@ -115,6 +118,32 @@ export default function HowToPlay() {
           <p className="text-center text-sm text-kopi-brown/50 mt-2">
             Any drink can be ordered as "Peng" (iced). Add ice to the cup!
           </p>
+        </div>
+
+        {/* Changelog */}
+        <div className="max-w-2xl mx-auto mt-6">
+          <details className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+            <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none
+              font-display font-bold text-kopi-brown/70 hover:text-kopi-brown transition-colors list-none">
+              <span>Changelog</span>
+              <span className="text-xs font-normal font-sans text-kopi-brown/40 group-open:hidden">show</span>
+              <span className="text-xs font-normal font-sans text-kopi-brown/40 hidden group-open:inline">hide</span>
+            </summary>
+            <div className="px-4 pb-4 border-t border-kopi-brown/10">
+              <ul className="mt-3 space-y-3 text-sm text-kopi-brown/70">
+                <li>
+                  <span className="font-semibold text-kopi-brown">Feb 2026 — Condensed milk &amp; Siu Dai revision</span>
+                  <p className="mt-0.5">
+                    An earlier version of the game required players to add sugar when making kopi or teh with
+                    condensed milk. This was revised: condensed milk is sweet on its own, so sugar is now
+                    optional for all condensed milk drinks — any amount (or none) is accepted.
+                    Separately, Siu Dai for condensed milk drinks now means a half pour of condensed milk
+                    (use the Less toggle on the condensed milk button) rather than half sugar.
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </details>
         </div>
       </div>
     </PageWrapper>

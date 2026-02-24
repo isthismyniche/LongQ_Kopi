@@ -7,7 +7,9 @@ export interface BaseDrink {
   base: BaseType
   baseUnits: number
   sugar: SugarLevel
+  sugarOptional?: boolean  // true for condensed milk drinks — any sugar amount is accepted
   milk: MilkType
+  milkUnits?: number       // condensed milk amount; defaults to 1, 0.5 for Siu Dai
   hotWater: boolean
 }
 
@@ -17,24 +19,24 @@ export interface DrinkOrder extends BaseDrink {
 }
 
 export const BASE_DRINKS: BaseDrink[] = [
-  { name: 'Kopi', base: 'Kopi', baseUnits: 1, sugar: 'Full', milk: 'Condensed', hotWater: true },
+  { name: 'Kopi', base: 'Kopi', baseUnits: 1, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
   { name: 'Kopi O', base: 'Kopi', baseUnits: 1, sugar: 'Full', milk: 'None', hotWater: true },
   { name: 'Kopi C', base: 'Kopi', baseUnits: 1, sugar: 'Full', milk: 'Evaporated', hotWater: true },
-  { name: 'Kopi Po', base: 'Kopi', baseUnits: 0.5, sugar: 'Full', milk: 'Condensed', hotWater: true },
-  { name: 'Kopi Gau', base: 'Kopi', baseUnits: 2, sugar: 'Full', milk: 'Condensed', hotWater: true },
-  { name: 'Kopi Di Lo', base: 'Kopi', baseUnits: 3, sugar: 'Full', milk: 'Condensed', hotWater: false },
-  { name: 'Kopi Siu Dai', base: 'Kopi', baseUnits: 1, sugar: 'Half', milk: 'Condensed', hotWater: true },
+  { name: 'Kopi Po', base: 'Kopi', baseUnits: 0.5, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
+  { name: 'Kopi Gau', base: 'Kopi', baseUnits: 2, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
+  { name: 'Kopi Di Lo', base: 'Kopi', baseUnits: 3, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: false },
+  { name: 'Kopi Siu Dai', base: 'Kopi', baseUnits: 1, sugar: 'Full', sugarOptional: true, milk: 'Condensed', milkUnits: 0.5, hotWater: true },
   { name: 'Kopi O Siu Dai', base: 'Kopi', baseUnits: 1, sugar: 'Half', milk: 'None', hotWater: true },
   { name: 'Kopi C Siu Dai', base: 'Kopi', baseUnits: 1, sugar: 'Half', milk: 'Evaporated', hotWater: true },
   { name: 'Kopi O Kosong', base: 'Kopi', baseUnits: 1, sugar: 'None', milk: 'None', hotWater: true },
   { name: 'Kopi C Kosong', base: 'Kopi', baseUnits: 1, sugar: 'None', milk: 'Evaporated', hotWater: true },
-  { name: 'Teh', base: 'Teh', baseUnits: 1, sugar: 'Full', milk: 'Condensed', hotWater: true },
+  { name: 'Teh', base: 'Teh', baseUnits: 1, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
   { name: 'Teh O', base: 'Teh', baseUnits: 1, sugar: 'Full', milk: 'None', hotWater: true },
   { name: 'Teh C', base: 'Teh', baseUnits: 1, sugar: 'Full', milk: 'Evaporated', hotWater: true },
-  { name: 'Teh Po', base: 'Teh', baseUnits: 0.5, sugar: 'Full', milk: 'Condensed', hotWater: true },
-  { name: 'Teh Gau', base: 'Teh', baseUnits: 2, sugar: 'Full', milk: 'Condensed', hotWater: true },
-  { name: 'Teh Di Lo', base: 'Teh', baseUnits: 3, sugar: 'Full', milk: 'Condensed', hotWater: false },
-  { name: 'Teh Siu Dai', base: 'Teh', baseUnits: 1, sugar: 'Half', milk: 'Condensed', hotWater: true },
+  { name: 'Teh Po', base: 'Teh', baseUnits: 0.5, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
+  { name: 'Teh Gau', base: 'Teh', baseUnits: 2, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: true },
+  { name: 'Teh Di Lo', base: 'Teh', baseUnits: 3, sugar: 'Full', sugarOptional: true, milk: 'Condensed', hotWater: false },
+  { name: 'Teh Siu Dai', base: 'Teh', baseUnits: 1, sugar: 'Full', sugarOptional: true, milk: 'Condensed', milkUnits: 0.5, hotWater: true },
   { name: 'Teh O Siu Dai', base: 'Teh', baseUnits: 1, sugar: 'Half', milk: 'None', hotWater: true },
   { name: 'Teh C Siu Dai', base: 'Teh', baseUnits: 1, sugar: 'Half', milk: 'Evaporated', hotWater: true },
   { name: 'Teh O Kosong', base: 'Teh', baseUnits: 1, sugar: 'None', milk: 'None', hotWater: true },

@@ -3,6 +3,7 @@ export type GameAction =
   | 'teh'
   | 'lessBase'
   | 'condensedMilk'
+  | 'lessCondensed'
   | 'evaporatedMilk'
   | 'sugar'
   | 'lessSugar'
@@ -22,6 +23,7 @@ export const DEFAULT_SHORTCUTS: ShortcutEntry[] = [
   { action: 'teh', label: 'Teh', key: 's' },
   { action: 'lessBase', label: 'Less (Kopi/Teh)', key: 'd' },
   { action: 'condensedMilk', label: 'Condensed Milk', key: 'j' },
+  { action: 'lessCondensed', label: 'Less (Condensed)', key: 'h' },
   { action: 'evaporatedMilk', label: 'Evaporated Milk', key: 'k' },
   { action: 'sugar', label: 'Sugar', key: 'l' },
   { action: 'lessSugar', label: 'Less (Sugar)', key: ';' },

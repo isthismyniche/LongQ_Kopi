@@ -5,6 +5,7 @@ export interface CupContents {
   baseUnits: number
   sugar: SugarLevel
   milk: MilkType
+  milkUnits: number
   hasIce: boolean
   hasHotWater: boolean
 }
@@ -15,17 +16,21 @@ export function createEmptyCup(): CupContents {
     baseUnits: 0,
     sugar: 'None',
     milk: 'None',
+    milkUnits: 1,
     hasIce: false,
     hasHotWater: false,
   }
 }
 
 export function validateOrder(cup: CupContents, order: DrinkOrder): boolean {
+  const sugarOk = order.sugarOptional === true || cup.sugar === order.sugar
+  const milkUnitsOk = cup.milkUnits === (order.milkUnits ?? 1)
   return (
     cup.base === order.base &&
     cup.baseUnits === order.baseUnits &&
-    cup.sugar === order.sugar &&
+    sugarOk &&
     cup.milk === order.milk &&
+    milkUnitsOk &&
     cup.hasIce === order.peng &&
     cup.hasHotWater === order.hotWater
   )
@@ -57,8 +62,8 @@ export function getOrderMismatches(cup: CupContents, order: DrinkOrder): OrderMi
     }
   }
 
-  // Sugar
-  if (cup.sugar !== order.sugar) {
+  // Sugar — skipped entirely for condensed milk drinks (any amount accepted)
+  if (order.sugarOptional !== true && cup.sugar !== order.sugar) {
     if (order.sugar === 'None' && cup.sugar !== 'None') {
       mismatches.push({ label: `Added sugar (should be Kosong)`, type: 'wrong' })
     } else if (cup.sugar === 'None' && order.sugar !== 'None') {
@@ -68,7 +73,7 @@ export function getOrderMismatches(cup: CupContents, order: DrinkOrder): OrderMi
     }
   }
 
-  // Milk
+  // Milk type
   if (cup.milk !== order.milk) {
     if (order.milk === 'None' && cup.milk !== 'None') {
       mismatches.push({ label: `Added ${cup.milk} milk (not needed)`, type: 'wrong' })
@@ -76,6 +81,18 @@ export function getOrderMismatches(cup: CupContents, order: DrinkOrder): OrderMi
       mismatches.push({ label: `Missed: ${order.milk} milk`, type: 'missed' })
     } else {
       mismatches.push({ label: `Wrong milk: ${cup.milk} instead of ${order.milk}`, type: 'wrong' })
+    }
+  }
+
+  // Condensed milk units (only relevant when milk type matches and is Condensed)
+  if (cup.milk === 'Condensed' && order.milk === 'Condensed') {
+    const expectedUnits = order.milkUnits ?? 1
+    if (cup.milkUnits !== expectedUnits) {
+      if (expectedUnits === 0.5) {
+        mismatches.push({ label: `Too much condensed milk — Siu Dai needs ½ (use Less toggle)`, type: 'wrong' })
+      } else {
+        mismatches.push({ label: `Not enough condensed milk — use full pour (no Less toggle)`, type: 'missed' })
+      }
     }
   }
 

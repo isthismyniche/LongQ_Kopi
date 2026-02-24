@@ -60,6 +60,7 @@ export function useGameState() {
   const [correctReaction, setCorrectReaction] = useState('')
   const [lessToggle, setLessToggle] = useState(false)
   const [sugarLessToggle, setSugarLessToggle] = useState(false)
+  const [condensedLessToggle, setCondensedLessToggle] = useState(false)
   const [customer, setCustomer] = useState<CustomerAppearance>(generateCustomerAppearance())
   const [queueCustomers, setQueueCustomers] = useState<CustomerAppearance[]>([])
 
@@ -168,6 +169,7 @@ export function useGameState() {
     setMismatches([])
     setLessToggle(false)
     setSugarLessToggle(false)
+    setCondensedLessToggle(false)
 
     setupCustomerForOrder(orderNumberRef.current, currentLevel)
 
@@ -207,6 +209,7 @@ export function useGameState() {
     setMismatches([])
     setLessToggle(false)
     setSugarLessToggle(false)
+    setCondensedLessToggle(false)
 
     // Set up first customer (may be a regular)
     setupCustomerForOrder(1, LEVELS[0])
@@ -237,8 +240,12 @@ export function useGameState() {
 
   const setMilk = useCallback((milk: MilkType) => {
     if (phase !== 'playing') return
-    setCup(prev => prev.milk === 'None' ? { ...prev, milk } : prev)
-  }, [phase])
+    setCup(prev => {
+      if (prev.milk !== 'None') return prev
+      const milkUnits = (milk === 'Condensed' && condensedLessToggle) ? 0.5 : 1
+      return { ...prev, milk, milkUnits }
+    })
+  }, [phase, condensedLessToggle])
 
   const addSugar = useCallback(() => {
     if (phase !== 'playing') return
@@ -251,6 +258,11 @@ export function useGameState() {
   const toggleSugarLess = useCallback(() => {
     if (phase !== 'playing') return
     setSugarLessToggle(prev => !prev)
+  }, [phase])
+
+  const toggleCondensedLess = useCallback(() => {
+    if (phase !== 'playing') return
+    setCondensedLessToggle(prev => !prev)
   }, [phase])
 
   const addIce = useCallback(() => {
@@ -268,6 +280,7 @@ export function useGameState() {
     setCup(createEmptyCup())
     setLessToggle(false)
     setSugarLessToggle(false)
+    setCondensedLessToggle(false)
   }, [phase])
 
   const serve = useCallback(() => {
@@ -375,6 +388,7 @@ export function useGameState() {
     correctReaction,
     lessToggle,
     sugarLessToggle,
+    condensedLessToggle,
     customer,
     queueCustomers,
     timer: {
@@ -407,6 +421,7 @@ export function useGameState() {
     setMilk,
     addSugar,
     toggleSugarLess,
+    toggleCondensedLess,
     addIce,
     addHotWater,
     discardCup,
