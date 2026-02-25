@@ -13,7 +13,10 @@ interface HUDProps {
 }
 
 export default function HUD({ score, lives, secondsRemaining, isTimerRunning, lastPoints, level, cupNumber, onQuit }: HUDProps) {
-  const timerFraction = secondsRemaining / level.timerSeconds
+  // Show empty bar and no seconds when the timer isn't actively running (between orders,
+  // error panel, level transition). This prevents the stale frozen-time display in L4-5
+  // where the 350 ms gap would otherwise show the previous order's remaining time.
+  const timerFraction = isTimerRunning ? secondsRemaining / level.timerSeconds : 0
   const isUrgent = secondsRemaining <= 5 && isTimerRunning
 
   return (
@@ -84,7 +87,7 @@ export default function HUD({ score, lives, secondsRemaining, isTimerRunning, la
 
         {/* Timer text */}
         <span className={`font-mono text-lg font-bold ${isUrgent ? 'text-hawker-red' : 'text-kopi-brown/60'}`}>
-          {Math.ceil(secondsRemaining)}s
+          {isTimerRunning ? `${Math.ceil(secondsRemaining)}s` : '—'}
         </span>
 
         {/* Lives */}

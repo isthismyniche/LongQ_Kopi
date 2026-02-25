@@ -92,8 +92,9 @@ export function tryGetRegular(
   // Minimum 2 orders between regulars
   if (ordersSinceLastRegular < 2) return null
 
-  // ~40% chance per eligible order to trigger a regular
-  if (Math.random() > 0.4) return null
+  // ~55% chance per eligible order to trigger a regular (was 40% — raised so all three
+  // reliably appear within a normal game session)
+  if (Math.random() > 0.45) return null
 
   // First visits in level 2 only (all three regulars introduced here)
   if (currentLevel === 2) {

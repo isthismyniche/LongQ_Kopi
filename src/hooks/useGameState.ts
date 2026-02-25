@@ -49,6 +49,16 @@ function generateCustomerAppearance(): CustomerAppearance {
   }
 }
 
+// Regenerate until skin tone + hair style differ from the previous main customer
+function generateDifferentAppearance(avoid: CustomerAppearance): CustomerAppearance {
+  for (let i = 0; i < 6; i++) {
+    const a = generateCustomerAppearance()
+    if (a.skinTone !== avoid.skinTone || a.hairStyle !== avoid.hairStyle) return a
+  }
+  // Fallback: force a different hair style
+  return { ...generateCustomerAppearance(), hairStyle: (avoid.hairStyle + 1 + Math.floor(Math.random() * 7)) % 8 }
+}
+
 export function useGameState() {
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(STARTING_LIVES)
@@ -88,6 +98,8 @@ export function useGameState() {
   const regularAssignmentsRef = useRef<RegularDrinkAssignment[]>([])
   const ordersSinceRegularRef = useRef(99) // start high so first eligible order can trigger
   const currentRegularRef = useRef<number | null>(null) // index into REGULARS for current customer
+  const queueRef = useRef<CustomerAppearance[]>([])           // mirrors queueCustomers for synchronous reads
+  const lastMainCustomerRef = useRef<CustomerAppearance | null>(null) // back-to-back appearance prevention
   const totalTimeUsedRef = useRef(0) // total seconds spent on correctly served drinks
   const wrongCycleRef = useRef(new ShuffleCycle(WRONG_REACTIONS))
   const correctCycleRef = useRef(new ShuffleCycle(CORRECT_REACTIONS))
@@ -136,6 +148,7 @@ export function useGameState() {
 
     if (regularResult) {
       const regular = REGULARS[regularResult.assignment.regularIndex]
+      lastMainCustomerRef.current = regular.appearance
       setCustomer(regular.appearance)
       setCurrentOrder(regularResult.assignment.drink)
       setIsRegular(true)
@@ -151,11 +164,23 @@ export function useGameState() {
       setIsSecondVisit(false)
       currentRegularRef.current = null
 
-      setQueueCustomers(prev => {
-        const newCustomer = generateCustomerAppearance()
-        setCustomer(prev[0] || generateCustomerAppearance())
-        return [...prev.slice(1), newCustomer]
-      })
+      // Read queue synchronously from ref — avoids calling setCustomer inside a state updater
+      // (calling setState inside another setState updater is a React anti-pattern and causes
+      // the two updates to be applied in separate renders, producing a visible queue-length flicker)
+      let nextCustomer = queueRef.current[0] ?? generateCustomerAppearance()
+
+      // Prevent back-to-back identical appearance (same skin tone + hair style)
+      const last = lastMainCustomerRef.current
+      if (last && nextCustomer.skinTone === last.skinTone && nextCustomer.hairStyle === last.hairStyle) {
+        nextCustomer = generateDifferentAppearance(last)
+      }
+
+      lastMainCustomerRef.current = nextCustomer
+      setCustomer(nextCustomer)
+
+      const newQueue = [...queueRef.current.slice(1), generateCustomerAppearance()]
+      queueRef.current = newQueue
+      setQueueCustomers(newQueue)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -203,6 +228,8 @@ export function useGameState() {
     currentRegularRef.current = null
 
     const queue = generateQueue(LEVELS[0].queueSize)
+    queueRef.current = queue
+    lastMainCustomerRef.current = null
     setQueueCustomers(queue)
 
     setCup(createEmptyCup())
@@ -336,13 +363,12 @@ export function useGameState() {
         setLevelUpComment(pickRandom(CROWD_COMMENTS))
 
         // Grow the queue for the new level
-        setQueueCustomers(prev => {
-          const extra = newLevel.queueSize - prev.length
-          if (extra > 0) {
-            return [...prev, ...Array.from({ length: extra }, () => generateCustomerAppearance())]
-          }
-          return prev
-        })
+        const extra = newLevel.queueSize - queueRef.current.length
+        if (extra > 0) {
+          const grown = [...queueRef.current, ...Array.from({ length: extra }, () => generateCustomerAppearance())]
+          queueRef.current = grown
+          setQueueCustomers(grown)
+        }
 
         setPhase('transition')
         setTimeout(() => {
