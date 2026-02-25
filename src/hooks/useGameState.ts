@@ -8,6 +8,7 @@ import {
   LEVELS,
   CROWD_COMMENTS,
   getLevelForCup,
+  getCupThresholdForLevel,
   type LevelConfig,
 } from '../data/gameConfig'
 import { createEmptyCup, validateOrder, getOrderMismatches, type CupContents, type OrderMismatch } from '../utils/orderValidation'
@@ -213,17 +214,26 @@ export function useGameState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const startGame = useCallback(() => {
+  const startGame = useCallback((devStartLevel?: number) => {
+    // devStartLevel is a dev-only shortcut to skip to a specific level.
+    // getCupThresholdForLevel sets cupNumber so getLevelForCup returns the right level.
+    const startLevel = (devStartLevel != null && LEVELS[devStartLevel - 1])
+      ? LEVELS[devStartLevel - 1]
+      : LEVELS[0]
+    const startCupNumber = devStartLevel != null ? getCupThresholdForLevel(devStartLevel) : 0
+    // Give one extra life when dev-jumping so there's time to test before game over
+    const startLives = devStartLevel != null ? STARTING_LIVES + 1 : STARTING_LIVES
+
     setScore(0)
-    setLives(STARTING_LIVES)
-    setCupNumber(0)
-    setLevel(LEVELS[0])
+    setLives(startLives)
+    setCupNumber(startCupNumber)
+    setLevel(startLevel)
     setLevelUpComment('')
     scoreRef.current = 0
-    livesRef.current = STARTING_LIVES
-    cupNumberRef.current = 0
+    livesRef.current = startLives
+    cupNumberRef.current = startCupNumber
     orderNumberRef.current = 1 // first customer is order #1
-    levelRef.current = LEVELS[0]
+    levelRef.current = startLevel
     totalTimeUsedRef.current = 0
     wrongCycleRef.current.reset()
     correctCycleRef.current.reset()
@@ -234,7 +244,7 @@ export function useGameState() {
     ordersSinceRegularRef.current = 99 // allow first eligible order to trigger
     currentRegularRef.current = null
 
-    const queue = generateQueue(LEVELS[0].queueSize)
+    const queue = generateQueue(startLevel.queueSize)
     queueRef.current = queue
     lastMainCustomerRef.current = null
     setQueueCustomers(queue)
@@ -250,10 +260,10 @@ export function useGameState() {
     setCondensedLessToggle(false)
 
     // Set up first customer (may be a regular)
-    setupCustomerForOrder(1, LEVELS[0])
+    setupCustomerForOrder(1, startLevel)
 
     setPhase('playing')
-    timer.start(LEVELS[0].timerSeconds)
+    timer.start(startLevel.timerSeconds)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

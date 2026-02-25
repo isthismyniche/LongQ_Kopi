@@ -302,6 +302,29 @@ export default function Game() {
           />
         )}
       </AnimatePresence>
+
+      {/* ── Dev-only level-skip bar ──────────────────────────────────────
+          Rendered only in local dev builds (import.meta.env.DEV === true).
+          Vite replaces this with `false` in production so the entire block
+          is dead-code-eliminated from the prod bundle — never ships.      */}
+      {import.meta.env.DEV && (
+        <div className="absolute bottom-0 left-0 right-0 z-[200] flex items-center gap-1.5 px-3 py-1.5 bg-black/80 pointer-events-auto">
+          <span className="text-white/40 font-mono text-[10px] font-bold mr-0.5 select-none">DEV</span>
+          {([1, 2, 3, 4, 5] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => game.startGame(l)}
+              className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold cursor-pointer
+                text-white bg-white/15 hover:bg-hawker-red/80 transition-colors select-none"
+            >
+              L{l}
+            </button>
+          ))}
+          <span className="ml-auto text-white/25 font-mono text-[9px] select-none">
+            +1 life · local only
+          </span>
+        </div>
+      )}
     </PageWrapper>
   )
 }
