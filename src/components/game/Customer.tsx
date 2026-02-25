@@ -144,47 +144,53 @@ export default function Customer({
       exit={isFirst ? { x: -70, opacity: 0, transition: { duration: 0.28, ease: 'easeIn' } } : {}}
       transition={{ duration: 0.4, type: 'spring' }}
     >
-      {/* ── Speech Bubble ─────────────────────────────────────────────── */}
-      {isFirst && (
-        <motion.div
-          className={`relative mb-3 px-3 py-2 rounded-xl border-2 shadow-md max-w-[180px] ${speechBg}`}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, type: 'spring' }}
-        >
-          <p className="text-sm font-bold text-kopi-brown text-center leading-tight font-display">
-            {speechText}
-          </p>
-          {/* Clean SVG triangle tail — no background bleed */}
-          <svg
-            className="absolute -bottom-[11px] left-1/2 -translate-x-1/2"
-            width="16" height="12" viewBox="0 0 16 12"
-          >
-            <polygon points="0,0 16,0 8,12" fill={tailBorder} />
-            <polygon points="2,0 14,0 8,9"  fill={tailFill}   />
-          </svg>
-        </motion.div>
-      )}
-
-      {/* ── Regular customer labels ────────────────────────────────────── */}
-      {isFirst && regularName && !orderResult && (
-        <div className="flex flex-col items-center mb-1">
-          <motion.span
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: [0.7, 1, 0.7], y: [0, -3, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="px-2 py-0.5 rounded-full bg-amber-500/90 text-white text-[9px] font-display font-bold mb-0.5"
-          >
-            {isSecondVisit ? 'Remember me?' : 'Remember me!'}
-          </motion.span>
-          <span className="px-2 py-0.5 rounded-full bg-hawker-red/90 text-white text-[10px] font-display font-bold">
-            {regularName}
-          </span>
-        </div>
-      )}
-
       {/* ── Character SVG + emotion overlays ──────────────────────────── */}
       <div className="relative">
+
+        {/* ── Speech Bubble + Labels ─────────────────────────────────────
+            Absolutely positioned above the SVG so they contribute ZERO
+            height to the flex column — the SVG is always the only layout
+            item and is never pushed out of view by the bubble.          */}
+        {isFirst && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 flex flex-col items-center pb-3 z-10 pointer-events-none w-max">
+            {/* Regular customer labels */}
+            {regularName && !orderResult && (
+              <div className="flex flex-col items-center mb-1">
+                <motion.span
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: [0.7, 1, 0.7], y: [0, -3, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="px-2 py-0.5 rounded-full bg-amber-500/90 text-white text-[9px] font-display font-bold mb-0.5"
+                >
+                  {isSecondVisit ? 'Remember me?' : 'Remember me!'}
+                </motion.span>
+                <span className="px-2 py-0.5 rounded-full bg-hawker-red/90 text-white text-[10px] font-display font-bold">
+                  {regularName}
+                </span>
+              </div>
+            )}
+            {/* Speech bubble */}
+            <motion.div
+              className={`relative px-3 py-2 rounded-xl border-2 shadow-md max-w-[180px] ${speechBg}`}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+            >
+              <p className="text-sm font-bold text-kopi-brown text-center leading-tight font-display">
+                {speechText}
+              </p>
+              {/* Clean SVG triangle tail — no background bleed */}
+              <svg
+                className="absolute -bottom-[11px] left-1/2 -translate-x-1/2"
+                width="16" height="12" viewBox="0 0 16 12"
+              >
+                <polygon points="0,0 16,0 8,12" fill={tailBorder} />
+                <polygon points="2,0 14,0 8,9"  fill={tailFill}   />
+              </svg>
+            </motion.div>
+          </div>
+        )}
+
         {/* Correct sparkles */}
         {isFirst && orderResult === 'correct' && <Sparkles />}
 
@@ -248,11 +254,11 @@ export default function Customer({
                 <path d="M62 28 Q65 50 63 68" stroke="#8B5E3C" strokeWidth="9"  fill="none" strokeLinecap="round" />
               </>
             ) : hairStyle === 6 ? (
-              // Bun on top
+              // Bun on top — cy moved from 9→11 so top is at y=2 (clear of SVG viewport edge)
               <>
                 <ellipse cx="40" cy="23" rx="21" ry="16" fill="#5C3D2E" />
-                <circle cx="40" cy="9"  r="9"  fill="#5C3D2E" />
-                <circle cx="40" cy="9"  r="4.5" fill="#4A3020" opacity="0.45" />
+                <circle cx="40" cy="11" r="9"   fill="#5C3D2E" />
+                <circle cx="40" cy="11" r="4.5" fill="#4A3020" opacity="0.45" />
               </>
             ) : hairStyle === 7 ? (
               // Baseball cap
