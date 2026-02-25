@@ -288,10 +288,14 @@ export function useGameState() {
   }, [phase])
 
   const acknowledgeError = useCallback(() => {
-    setPhase('transition')
-    setTimeout(() => {
-      advanceToNextCustomer()
-    }, TRANSITION_DURATION_MS)
+    if (livesRef.current <= 0) {
+      setTimeout(() => setPhase('gameover'), TRANSITION_DURATION_MS)
+    } else {
+      setPhase('transition')
+      setTimeout(() => {
+        advanceToNextCustomer()
+      }, TRANSITION_DURATION_MS)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -368,13 +372,9 @@ export function useGameState() {
       setLives(newLives)
       livesRef.current = newLives
 
-      if (livesRef.current <= 0) {
-        setTimeout(() => setPhase('gameover'), TRANSITION_DURATION_MS)
-      } else {
-        // Show error panel — player must dismiss before advancing
-        setCurrentQuote(quoteCycleRef.current.next())
-        setPhase('errorAck')
-      }
+      // Always show error panel — player must dismiss before gameover or next customer
+      setCurrentQuote(quoteCycleRef.current.next())
+      setPhase('errorAck')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentOrder, cup])
