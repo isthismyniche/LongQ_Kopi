@@ -141,6 +141,7 @@ The game runs fully without any environment variables — Supabase and Stripe in
 | `VITE_SUPABASE_ANON_KEY` | Vercel / `.env` | Supabase auth |
 | `VITE_SCORE_SECRET` | Vercel / `.env` | HMAC key for score URL signing |
 | `STRIPE_SECRET_KEY` | Vercel only | Donation checkout (server-side) |
+| `VITE_GA_MEASUREMENT_ID` | Vercel / `.env` | Google Analytics 4 Measurement ID (e.g. `G-XXXXXXXXXX`) |
 
 ---
 

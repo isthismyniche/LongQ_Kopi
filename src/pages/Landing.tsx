@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageWrapper from '../components/ui/PageWrapper'
+import { trackEvent } from '../utils/analytics'
 
 const menuButtons = [
-  { label: 'Start', path: '/game', color: 'bg-hawker-red hover:bg-hawker-red/90' },
-  { label: 'How to Play', path: '/how-to-play', color: 'bg-kopi-brown hover:bg-kopi-brown/90' },
-  { label: 'Leaderboard', path: '/leaderboard', color: 'bg-warm-yellow hover:bg-warm-yellow/90 text-kopi-brown' },
-  { label: 'Settings', path: '/settings', color: 'bg-kopi-brown/70 hover:bg-kopi-brown/80' },
+  { label: 'Start', path: '/game', color: 'bg-hawker-red hover:bg-hawker-red/90', track: 'start' },
+  { label: 'How to Play', path: '/how-to-play', color: 'bg-kopi-brown hover:bg-kopi-brown/90', track: 'how_to_play' },
+  { label: 'Leaderboard', path: '/leaderboard', color: 'bg-warm-yellow hover:bg-warm-yellow/90 text-kopi-brown', track: 'leaderboard' },
+  { label: 'Settings', path: '/settings', color: 'bg-kopi-brown/70 hover:bg-kopi-brown/80', track: 'settings' },
 ]
 
 // ── Modal wrapper ─────────────────────────────────────────────────────────────
@@ -311,7 +312,7 @@ export default function Landing() {
         {menuButtons.map((btn, i) => (
           <motion.button
             key={btn.path}
-            onClick={() => navigate(btn.path)}
+            onClick={() => { trackEvent('home_click', { button: btn.track }); navigate(btn.path) }}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + i * 0.1 }}
@@ -331,7 +332,7 @@ export default function Landing() {
         transition={{ delay: 0.7 }}
       >
         <button
-          onClick={() => setShowAbout(true)}
+          onClick={() => { trackEvent('home_click', { button: 'about' }); setShowAbout(true) }}
           aria-label="About"
           className="flex flex-col items-center gap-1.5 cursor-pointer group"
         >
@@ -348,7 +349,7 @@ export default function Landing() {
         </button>
 
         <button
-          onClick={() => setShowSupport(true)}
+          onClick={() => { trackEvent('home_click', { button: 'support' }); setShowSupport(true) }}
           aria-label="Support this project"
           className="flex flex-col items-center gap-1.5 cursor-pointer group"
         >

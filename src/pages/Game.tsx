@@ -13,6 +13,7 @@ import { useSounds } from '../hooks/useSounds'
 import { useMusicManager } from '../hooks/useMusicManager'
 import { loadSettings } from './Settings'
 import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
+import { trackEvent } from '../utils/analytics'
 
 export default function Game() {
   const navigate = useNavigate()
@@ -52,7 +53,12 @@ export default function Game() {
       sounds.playGameOver()
       stop()
     }
-    if (game.phase === 'playing' && (prev === 'idle' || prev === 'gameover')) {
+    if (game.phase === 'playing' && prev === 'idle') {
+      trackEvent('game_start')
+      play()
+    }
+    if (game.phase === 'playing' && prev === 'gameover') {
+      trackEvent('game_restart')
       play()
     }
     if (game.phase === 'errorAck') {
