@@ -289,12 +289,10 @@ export function useGameState() {
 
   const acknowledgeError = useCallback(() => {
     if (livesRef.current <= 0) {
-      setTimeout(() => setPhase('gameover'), TRANSITION_DURATION_MS)
+      setPhase('gameover')
     } else {
-      setPhase('transition')
-      setTimeout(() => {
-        advanceToNextCustomer()
-      }, TRANSITION_DURATION_MS)
+      // Advance immediately — error panel exits via its own AnimatePresence animation
+      advanceToNextCustomer()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -354,10 +352,12 @@ export function useGameState() {
           }, LEVEL_TRANSITION_MS)
         }, TRANSITION_DURATION_MS)
       } else {
+        // Levels 4-5: flash the green bubble briefly then instantly serve the next customer
+        const quickTransition = levelRef.current.level >= 4
         setPhase('transition')
         setTimeout(() => {
           advanceToNextCustomer()
-        }, TRANSITION_DURATION_MS)
+        }, quickTransition ? 350 : TRANSITION_DURATION_MS)
       }
     } else {
       setOrderResult('wrong')

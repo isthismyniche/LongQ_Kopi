@@ -141,6 +141,7 @@ export default function Customer({
       className={`flex flex-col items-center ${blur ? 'blur-sm opacity-40 scale-75' : ''}`}
       initial={isFirst ? { x: 80, opacity: 0 } : {}}
       animate={isFirst ? { x: 0, opacity: 1, ...animationVariant } : animationVariant}
+      exit={isFirst ? { x: -70, opacity: 0, transition: { duration: 0.28, ease: 'easeIn' } } : {}}
       transition={{ duration: 0.4, type: 'spring' }}
     >
       {/* ── Speech Bubble ─────────────────────────────────────────────── */}

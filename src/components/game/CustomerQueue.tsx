@@ -28,8 +28,8 @@ export default function CustomerQueue({
   return (
     <div className="flex items-end justify-center gap-2 h-full pt-4">
       {/* Background queue — subtle staggered idle bob */}
-      <div className="flex items-end gap-1 mr-4">
-        {queueCustomers.slice(0, 3).map((c, i) => (
+      <div className="flex items-end gap-1 mr-3">
+        {queueCustomers.slice(0, 4).map((c, i) => (
           <motion.div
             key={`queue-${i}`}
             animate={{ y: [0, -2, 0] }}
@@ -52,7 +52,7 @@ export default function CustomerQueue({
       </div>
 
       {/* Current customer */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <Customer
           key={`${orderText}-${regularName}-${isSecondVisit}`}
           appearance={currentCustomer}

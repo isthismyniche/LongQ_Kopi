@@ -64,7 +64,7 @@ export default function Game() {
     if (game.phase === 'errorAck') {
       duck()
     }
-    if (prev === 'errorAck' && game.phase === 'transition') {
+    if (prev === 'errorAck' && (game.phase === 'transition' || game.phase === 'playing')) {
       unduck()
     }
     if (game.phase === 'levelup') {

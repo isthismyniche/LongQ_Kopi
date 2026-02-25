@@ -16,11 +16,11 @@ export interface LevelConfig {
 }
 
 export const LEVELS: LevelConfig[] = [
-  { level: 1, name: 'Morning Shift', timerSeconds: 15, cupsToComplete: 6, queueSize: 2, drinkPool: 'standard', scoreMultiplier: 1 },
+  { level: 1, name: 'Morning Shift', timerSeconds: 15, cupsToComplete: 6, queueSize: 1, drinkPool: 'standard', scoreMultiplier: 1 },
   { level: 2, name: 'Breakfast Rush', timerSeconds: 15, cupsToComplete: 13, queueSize: 3, drinkPool: 'medium', scoreMultiplier: 1.2 },
-  { level: 3, name: 'Lunch Hour', timerSeconds: 12, cupsToComplete: 10, queueSize: 4, drinkPool: 'full', scoreMultiplier: 1.5 },
-  { level: 4, name: 'Tea Time', timerSeconds: 8, cupsToComplete: 10, queueSize: 5, drinkPool: 'full', scoreMultiplier: 1.8 },
-  { level: 5, name: 'Supper Crowd', timerSeconds: 5, cupsToComplete: Infinity, queueSize: 6, drinkPool: 'full', scoreMultiplier: 2.5 },
+  { level: 3, name: 'Lunch Hour', timerSeconds: 12, cupsToComplete: 10, queueSize: 5, drinkPool: 'full', scoreMultiplier: 1.5 },
+  { level: 4, name: 'Tea Time', timerSeconds: 8, cupsToComplete: 10, queueSize: 8, drinkPool: 'full', scoreMultiplier: 1.8 },
+  { level: 5, name: 'Supper Crowd', timerSeconds: 5, cupsToComplete: Infinity, queueSize: 12, drinkPool: 'full', scoreMultiplier: 2.5 },
 ]
 
 // Kept for backwards compat — default timer is level 1
