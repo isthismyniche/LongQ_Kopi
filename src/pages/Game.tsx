@@ -55,6 +55,12 @@ export default function Game() {
     if (game.phase === 'playing' && (prev === 'idle' || prev === 'gameover')) {
       play()
     }
+    if (game.phase === 'errorAck') {
+      duck()
+    }
+    if (prev === 'errorAck' && game.phase === 'transition') {
+      unduck()
+    }
     if (game.phase === 'levelup') {
       duck()
     }
@@ -177,17 +183,10 @@ export default function Game() {
             isSecondVisit={game.isSecondVisit}
           />
         )}
-
-        {/* Error explanation popup on wrong order */}
-        <AnimatePresence>
-          {game.orderResult === 'wrong' && game.mismatches.length > 0 && (
-            <ErrorExplanation mismatches={game.mismatches} />
-          )}
-        </AnimatePresence>
       </div>
 
-      {/* Counter */}
-      <div className="flex-shrink-0">
+      {/* Counter — error panel slides up over this when errorAck phase */}
+      <div className="flex-shrink-0 relative">
         <Counter
           cup={game.cup}
           lessToggle={game.lessToggle}
@@ -206,6 +205,15 @@ export default function Game() {
           onServe={game.serve}
           disabled={game.phase !== 'playing'}
         />
+        <AnimatePresence>
+          {game.phase === 'errorAck' && game.mismatches.length > 0 && (
+            <ErrorExplanation
+              mismatches={game.mismatches}
+              quote={game.currentQuote}
+              onDismiss={game.acknowledgeError}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Quit confirmation modal */}

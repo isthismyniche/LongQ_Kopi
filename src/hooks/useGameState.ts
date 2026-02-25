@@ -14,9 +14,10 @@ import { createEmptyCup, validateOrder, getOrderMismatches, type CupContents, ty
 import { calculateScore } from '../utils/scoring'
 import { useTimer } from './useTimer'
 import { ShuffleCycle, WRONG_REACTIONS, CORRECT_REACTIONS } from '../data/reactions'
+import { QUOTES } from '../data/quotes'
 import { REGULARS, createRegularAssignments, tryGetRegular, type RegularDrinkAssignment } from '../data/regulars'
 
-export type GamePhase = 'idle' | 'playing' | 'transition' | 'levelup' | 'gameover'
+export type GamePhase = 'idle' | 'playing' | 'transition' | 'levelup' | 'gameover' | 'errorAck'
 export type OrderResult = 'correct' | 'wrong' | 'timeout' | null
 
 function pickRandom<T>(arr: T[]): T {
@@ -90,6 +91,8 @@ export function useGameState() {
   const totalTimeUsedRef = useRef(0) // total seconds spent on correctly served drinks
   const wrongCycleRef = useRef(new ShuffleCycle(WRONG_REACTIONS))
   const correctCycleRef = useRef(new ShuffleCycle(CORRECT_REACTIONS))
+  const quoteCycleRef = useRef(new ShuffleCycle(QUOTES))
+  const [currentQuote, setCurrentQuote] = useState('')
 
   const handleTimeout = useCallback(() => {
     setOrderResult('timeout')
@@ -192,6 +195,7 @@ export function useGameState() {
     totalTimeUsedRef.current = 0
     wrongCycleRef.current.reset()
     correctCycleRef.current.reset()
+    quoteCycleRef.current.reset()
 
     // Create regular customer assignments for this session
     regularAssignmentsRef.current = createRegularAssignments('full')
@@ -283,6 +287,14 @@ export function useGameState() {
     setCondensedLessToggle(false)
   }, [phase])
 
+  const acknowledgeError = useCallback(() => {
+    setPhase('transition')
+    setTimeout(() => {
+      advanceToNextCustomer()
+    }, TRANSITION_DURATION_MS)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const serve = useCallback(() => {
     if (phase !== 'playing' || !currentOrder) return
     timer.stop()
@@ -359,10 +371,9 @@ export function useGameState() {
       if (livesRef.current <= 0) {
         setTimeout(() => setPhase('gameover'), TRANSITION_DURATION_MS)
       } else {
-        setPhase('transition')
-        setTimeout(() => {
-          advanceToNextCustomer()
-        }, TRANSITION_DURATION_MS)
+        // Show error panel — player must dismiss before advancing
+        setCurrentQuote(quoteCycleRef.current.next())
+        setPhase('errorAck')
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -413,6 +424,7 @@ export function useGameState() {
 
     // Error explanation
     mismatches,
+    currentQuote,
 
     // Actions
     startGame,
@@ -425,6 +437,7 @@ export function useGameState() {
     addIce,
     addHotWater,
     discardCup,
+    acknowledgeError,
     serve,
 
     // Timer control (for pause/resume)

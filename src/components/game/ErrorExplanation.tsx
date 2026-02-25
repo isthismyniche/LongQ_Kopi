@@ -3,40 +3,67 @@ import type { OrderMismatch } from '../../utils/orderValidation'
 
 interface ErrorExplanationProps {
   mismatches: OrderMismatch[]
+  quote: string
+  onDismiss: () => void
 }
 
-export default function ErrorExplanation({ mismatches }: ErrorExplanationProps) {
+export default function ErrorExplanation({ mismatches, quote, onDismiss }: ErrorExplanationProps) {
   if (mismatches.length === 0) return null
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.9 }}
-      transition={{ type: 'spring', duration: 0.4 }}
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-sm
-        rounded-2xl shadow-xl border-2 border-red-200 px-4 py-3 max-w-xs w-[90%]"
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+      className="absolute inset-0 z-10 bg-gradient-to-b from-amber-800 to-amber-950
+        rounded-t-3xl flex flex-col px-4 pt-4 pb-3 shadow-2xl"
     >
-      <p className="font-display text-xs font-bold text-hawker-red mb-1.5 text-center">
-        What went wrong:
+      {/* Header */}
+      <p className="font-display text-[10px] font-bold text-amber-300/60 uppercase tracking-widest mb-2.5">
+        What went wrong
       </p>
-      <ul className="space-y-1">
+
+      {/* Mismatch list */}
+      <ul className="space-y-1.5 flex-1">
         {mismatches.map((m, i) => (
           <motion.li
             key={i}
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.08 }}
-            className="flex items-start gap-1.5 text-xs text-kopi-brown"
+            transition={{ delay: 0.08 + i * 0.07, type: 'spring', stiffness: 300 }}
+            className="flex items-center gap-2 text-sm text-amber-100/90"
           >
-            <span className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 text-[8px] font-bold text-white
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0
+              text-[9px] font-black text-white shadow-sm
               ${m.type === 'wrong' ? 'bg-hawker-red' : 'bg-amber-500'}`}>
               {m.type === 'wrong' ? '✕' : '?'}
             </span>
-            <span>{m.label}</span>
+            <span className="leading-tight">{m.label}</span>
           </motion.li>
         ))}
       </ul>
+
+      {/* Quote dismiss button */}
+      <motion.button
+        onClick={onDismiss}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 + mismatches.length * 0.07 }}
+        whileTap={{ scale: 0.97 }}
+        className="mt-3 w-full rounded-2xl cursor-pointer
+          bg-gradient-to-br from-amber-600/40 to-amber-800/60
+          border border-amber-500/30 hover:border-amber-400/50
+          px-4 py-3 text-center transition-colors group"
+      >
+        <p className="text-[10px] font-semibold text-amber-400/50 uppercase tracking-widest mb-1.5
+          group-hover:text-amber-400/70 transition-colors">
+          tap to continue
+        </p>
+        <p className="font-display text-sm font-bold text-amber-100/90 leading-snug italic">
+          "{quote}"
+        </p>
+      </motion.button>
     </motion.div>
   )
 }
