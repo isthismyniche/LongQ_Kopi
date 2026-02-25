@@ -37,7 +37,9 @@ export default function GameOverModal({
   onMainMenu,
 }: GameOverModalProps) {
   const [showShareForm, setShowShareForm] = useState(false)
-  const [playerName, setPlayerName] = useState('')
+  const [playerName, setPlayerName] = useState(
+    () => localStorage.getItem('longq_kopi_player_name') ?? ''
+  )
   const [saved, setSaved] = useState(false)
   const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [cardError, setCardError] = useState(false)
@@ -69,6 +71,7 @@ export default function GameOverModal({
         drinksServed,
         avgTime: avgSeconds,
       })
+      localStorage.setItem('longq_kopi_player_name', playerName.trim())
       setSaved(true)
     } catch (err) {
       console.error('Failed to save score:', err)

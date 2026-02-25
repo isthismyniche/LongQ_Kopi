@@ -107,8 +107,12 @@ export default function HowToPlay() {
                     <td className="px-3 py-2 font-semibold text-kopi-brown">{drink.name}</td>
                     <td className="px-3 py-2 text-kopi-brown/70">{drink.base}</td>
                     <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.baseUnits}</td>
-                    <td className="px-3 py-2 text-kopi-brown/70">{drink.sugar}</td>
-                    <td className="px-3 py-2 text-kopi-brown/70">{drink.milk}</td>
+                    <td className="px-3 py-2 text-kopi-brown/70">
+                      {drink.sugarOptional ? <span className="text-kopi-brown/40 italic">Optional</span> : drink.sugar}
+                    </td>
+                    <td className="px-3 py-2 text-kopi-brown/70">
+                      {drink.milk === 'Condensed' && drink.milkUnits === 0.5 ? 'Condensed (½)' : drink.milk}
+                    </td>
                     <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.hotWater ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}

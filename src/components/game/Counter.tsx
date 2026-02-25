@@ -357,6 +357,13 @@ export default function Counter({
         <div className="flex flex-col gap-1.5 items-center">
           <div className="flex gap-1 items-end">
             <div className="flex flex-col items-center gap-0.5">
+              <LessButton
+                onClick={onToggleCondensedLess}
+                active={condensedLessToggle}
+                disabled={disabled || cup.milk !== 'None'}
+                ariaLabel="Toggle less for condensed milk"
+                shortcut={getKey(shortcuts, 'lessCondensed')}
+              />
               <IconButton
                 onClick={() => onSetMilk('Condensed')}
                 icon={<CondensedCanIcon />}
@@ -365,13 +372,6 @@ export default function Counter({
                 disabled={disabled || cup.milk !== 'None'}
                 ariaLabel="Add condensed milk"
                 shortcut={getKey(shortcuts, 'condensedMilk')}
-              />
-              <LessButton
-                onClick={onToggleCondensedLess}
-                active={condensedLessToggle}
-                disabled={disabled || cup.milk !== 'None'}
-                ariaLabel="Toggle less for condensed milk"
-                shortcut={getKey(shortcuts, 'lessCondensed')}
               />
             </div>
             <IconButton
