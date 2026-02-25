@@ -34,18 +34,25 @@ export interface CustomerAppearance {
   hairStyle: number
   shirtColor: string
   ethnicity: string
+  gender: 'male' | 'female'
 }
 
 const ETHNICITIES = ['Chinese', 'Malay', 'Indian', 'Eurasian', 'Southeast Asian']
 const SKIN_TONES = ['#FDDCB1', '#E8B87E', '#8D5524', '#C68642', '#D4A574']
 const SHIRT_COLORS = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E']
 
+// Hair styles split by gender so the body shape difference is reinforced by hairstyle
+const MALE_HAIR_STYLES   = [0, 1, 3, 4, 7]          // short / crop / buzz / cap
+const FEMALE_HAIR_STYLES = [0, 1, 2, 3, 5, 6]       // includes swept, shoulder-length, bun
+
 function generateCustomerAppearance(): CustomerAppearance {
+  const gender: 'male' | 'female' = Math.random() < 0.5 ? 'male' : 'female'
   return {
     skinTone: pickRandom(SKIN_TONES),
-    hairStyle: Math.floor(Math.random() * 8),
+    hairStyle: pickRandom(gender === 'male' ? MALE_HAIR_STYLES : FEMALE_HAIR_STYLES),
     shirtColor: pickRandom(SHIRT_COLORS),
     ethnicity: pickRandom(ETHNICITIES),
+    gender,
   }
 }
 

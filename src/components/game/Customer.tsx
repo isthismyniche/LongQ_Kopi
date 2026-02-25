@@ -99,7 +99,8 @@ export default function Customer({
   blur = false,
   timerUrgent = false,
 }: CustomerProps) {
-  const { skinTone, hairStyle, shirtColor } = appearance
+  const { skinTone, hairStyle, shirtColor, gender } = appearance
+  const isMale = gender === 'male'
 
   const animationVariant = orderResult === 'correct'
     ? { y: [0, -14, 0], transition: { duration: 0.45, times: [0, 0.45, 1] } }
@@ -270,7 +271,11 @@ export default function Customer({
             ) : null}
 
             {/* ── Head ─────────────────────────────────────────────────── */}
-            <ellipse cx="40" cy="30" rx="18" ry="20" fill={skinTone} />
+            {/* Male: wider/squarer (rx>ry).  Female: taller/rounder (ry>rx) */}
+            {isMale
+              ? <ellipse cx="40" cy="31" rx="20" ry="18" fill={skinTone} />
+              : <ellipse cx="40" cy="30" rx="18" ry="20" fill={skinTone} />
+            }
 
             {/* ── Eyebrows (state-reactive — the biggest expressiveness lever) ── */}
             {orderResult === 'correct' ? (
@@ -335,18 +340,28 @@ export default function Customer({
               />
             )}
 
-            {/* ── Body ─────────────────────────────────────────────────── */}
-            <path
-              d="M22 50 Q22 46 28 44 L40 42 L52 44 Q58 46 58 50 L60 90 L20 90 Z"
-              fill={shirtColor}
-            />
-
-            {/* ── Arms ─────────────────────────────────────────────────── */}
-            <path d="M22 52 L10 72 L16 74 L26 58" fill={skinTone} />
-            <path d="M58 52 L70 72 L64 74 L54 58" fill={skinTone} />
-
-            {/* ── Collar detail ─────────────────────────────────────────── */}
-            <path d="M34 44 L40 48 L46 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
+            {/* ── Body / Arms / Collar — gender-specific proportions ──── */}
+            {isMale ? (
+              <>
+                {/* Neck — visible on males, bridges head and wider shoulders */}
+                <rect x="35" y="46" width="10" height="8" fill={skinTone} />
+                {/* Broad shoulders */}
+                <path d="M16 54 Q16 47 24 44 L40 42 L56 44 Q64 47 64 54 L66 90 L14 90 Z" fill={shirtColor} />
+                {/* Arms — start from the wider shoulder position */}
+                <path d="M16 56 L4 77 L11 79 L22 63" fill={skinTone} />
+                <path d="M64 56 L76 77 L69 79 L58 63" fill={skinTone} />
+                {/* V-neck collar — slightly wider to match shoulders */}
+                <path d="M33 44 L40 49 L47 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
+              </>
+            ) : (
+              <>
+                {/* Slimmer shoulders — original female silhouette */}
+                <path d="M22 50 Q22 46 28 44 L40 42 L52 44 Q58 46 58 50 L60 90 L20 90 Z" fill={shirtColor} />
+                <path d="M22 52 L10 72 L16 74 L26 58" fill={skinTone} />
+                <path d="M58 52 L70 72 L64 74 L54 58" fill={skinTone} />
+                <path d="M34 44 L40 48 L46 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
+              </>
+            )}
 
             {/* ── Timer urgency sweat bead ─────────────────────────────── */}
             {isFirst && timerUrgent && !orderResult && (
