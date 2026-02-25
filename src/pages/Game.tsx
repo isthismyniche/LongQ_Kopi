@@ -187,8 +187,25 @@ export default function Game() {
             correctReaction={game.correctReaction}
             regularName={game.regularName}
             isSecondVisit={game.isSecondVisit}
+            timerUrgent={game.timer.secondsRemaining <= 3 && game.timer.isRunning}
           />
         )}
+
+        {/* Urgency vignette — pulses red at screen edges when ≤3s remain */}
+        <AnimatePresence>
+          {game.timer.secondsRemaining <= 3 && game.timer.isRunning && game.phase === 'playing' && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.25, 0.55, 0.25] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none z-10"
+              style={{
+                background: 'radial-gradient(ellipse at center, transparent 35%, rgba(196,30,58,0.38) 100%)',
+              }}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Counter — error panel slides up over this when errorAck phase */}

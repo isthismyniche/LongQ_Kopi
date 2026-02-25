@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Customer from './Customer'
 import type { CustomerAppearance, OrderResult } from '../../hooks/useGameState'
 
@@ -11,6 +11,7 @@ interface CustomerQueueProps {
   correctReaction: string
   regularName: string
   isSecondVisit: boolean
+  timerUrgent?: boolean
 }
 
 export default function CustomerQueue({
@@ -22,20 +23,31 @@ export default function CustomerQueue({
   correctReaction,
   regularName,
   isSecondVisit,
+  timerUrgent = false,
 }: CustomerQueueProps) {
   return (
     <div className="flex items-end justify-center gap-2 h-full pt-4">
-      {/* Background queue */}
+      {/* Background queue — subtle staggered idle bob */}
       <div className="flex items-end gap-1 mr-4">
         {queueCustomers.slice(0, 3).map((c, i) => (
-          <Customer
+          <motion.div
             key={`queue-${i}`}
-            appearance={c}
-            orderText=""
-            orderResult={null}
-            expletive=""
-            blur
-          />
+            animate={{ y: [0, -2, 0] }}
+            transition={{
+              duration: 2.8 + i * 0.35,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: i * 0.55,
+            }}
+          >
+            <Customer
+              appearance={c}
+              orderText=""
+              orderResult={null}
+              expletive=""
+              blur
+            />
+          </motion.div>
         ))}
       </div>
 
@@ -51,6 +63,7 @@ export default function CustomerQueue({
           regularName={regularName}
           isSecondVisit={isSecondVisit}
           isFirst
+          timerUrgent={timerUrgent}
         />
       </AnimatePresence>
     </div>

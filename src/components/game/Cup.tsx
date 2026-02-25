@@ -134,18 +134,23 @@ export default function Cup({ contents }: CupProps) {
         {/* === Handle === */}
         <path d="M80 52 Q92 52 92 66 Q92 80 80 80" stroke="#C8B8A0" strokeWidth="3" fill="none" strokeLinecap="round" />
 
-        {/* === Steam === */}
+        {/* === Steam (three wisps, more visible) === */}
         {hasAnything && !hasIce && (
           <>
             <motion.path
-              d="M40 34 Q43 24 40 14" stroke="#8B6914" strokeWidth="1.2" fill="none" opacity="0.15"
-              animate={{ y: [-1, -6, -1], opacity: [0.1, 0.25, 0.1] }}
+              d="M40 34 Q43 24 40 14" stroke="#8B6914" strokeWidth="1.3" fill="none"
+              animate={{ y: [-1, -7, -1], opacity: [0.12, 0.32, 0.12] }}
               transition={{ duration: 2, repeat: Infinity }}
             />
             <motion.path
-              d="M54 34 Q57 24 54 14" stroke="#8B6914" strokeWidth="1.2" fill="none" opacity="0.15"
-              animate={{ y: [-1, -6, -1], opacity: [0.1, 0.25, 0.1] }}
+              d="M54 34 Q57 24 54 14" stroke="#8B6914" strokeWidth="1.3" fill="none"
+              animate={{ y: [-1, -7, -1], opacity: [0.12, 0.32, 0.12] }}
               transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
+            />
+            <motion.path
+              d="M47 36 Q50 26 47 15" stroke="#8B6914" strokeWidth="1.1" fill="none"
+              animate={{ y: [-1, -6, -1], opacity: [0.08, 0.22, 0.08] }}
+              transition={{ duration: 2.4, repeat: Infinity, delay: 1.3 }}
             />
           </>
         )}

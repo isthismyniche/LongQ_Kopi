@@ -43,7 +43,7 @@ const SHIRT_COLORS = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#1
 function generateCustomerAppearance(): CustomerAppearance {
   return {
     skinTone: pickRandom(SKIN_TONES),
-    hairStyle: Math.floor(Math.random() * 4),
+    hairStyle: Math.floor(Math.random() * 8),
     shirtColor: pickRandom(SHIRT_COLORS),
     ethnicity: pickRandom(ETHNICITIES),
   }
