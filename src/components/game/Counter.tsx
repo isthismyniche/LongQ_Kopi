@@ -204,7 +204,7 @@ function IconButton({
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      whileTap={disabled ? {} : { scale: 0.9 }}
+      whileTap={disabled ? {} : { scale: 0.88, filter: 'brightness(1.4)' }}
       aria-label={ariaLabel}
       className={`relative flex flex-col items-center justify-center rounded-xl p-1.5 min-w-[56px] h-[68px] md:min-w-[68px] md:h-[76px]
         font-display font-bold shadow-md transition-all cursor-pointer
