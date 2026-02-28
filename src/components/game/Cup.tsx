@@ -104,12 +104,31 @@ export default function Cup({ contents }: CupProps) {
             />
           )}
 
-          {/* Base liquid */}
+          {/* Base liquid — key on base+baseUnits so animation replays on every pour */}
           {hasBase && (
-            <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-              <rect x="18" width="64" y={baseTop} height={baseH} fill={baseColor} opacity="0.85" rx="1" />
-              <rect x="28" width="44" y={baseTop} height="1.5" fill={baseColorLight} opacity="0.4" rx="1" />
-            </motion.g>
+            <>
+              <motion.g
+                key={`base-${base}-${baseUnits}`}
+                initial={{ y: 5, opacity: 0.6 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                <rect x="18" width="64" y={baseTop} height={baseH} fill={baseColor} opacity="0.85" rx="1" />
+                <rect x="28" width="44" y={baseTop} height="1.5" fill={baseColorLight} opacity="0.4" rx="1" />
+              </motion.g>
+              {/* Surface ripple — expands outward and fades on each pour */}
+              <motion.ellipse
+                key={`ripple-${base}-${baseUnits}`}
+                cx="50"
+                cy={baseTop + 1}
+                rx="22"
+                ry="2.5"
+                fill={baseColorLight}
+                initial={{ scaleX: 0.3, opacity: 0.55 }}
+                animate={{ scaleX: 1, opacity: 0 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              />
+            </>
           )}
 
           {/* Ice cubes */}

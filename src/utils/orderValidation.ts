@@ -55,10 +55,11 @@ export function getOrderMismatches(cup: CupContents, order: DrinkOrder): OrderMi
 
   // Base units
   if (cup.base === order.base && cup.baseUnits !== order.baseUnits) {
+    const fmtUnits = (n: number) => `${n} unit${n === 1 ? '' : 's'}`
     if (cup.baseUnits > order.baseUnits) {
-      mismatches.push({ label: `Too much base: ${cup.baseUnits}u instead of ${order.baseUnits}u`, type: 'wrong' })
+      mismatches.push({ label: `Too much base: ${fmtUnits(cup.baseUnits)} instead of ${fmtUnits(order.baseUnits)}`, type: 'wrong' })
     } else {
-      mismatches.push({ label: `Not enough base: ${cup.baseUnits}u instead of ${order.baseUnits}u`, type: 'missed' })
+      mismatches.push({ label: `Not enough base: ${fmtUnits(cup.baseUnits)} instead of ${fmtUnits(order.baseUnits)}`, type: 'missed' })
     }
   }
 
