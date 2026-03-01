@@ -345,13 +345,22 @@ export default function Customer({
               <>
                 {/* Neck — visible on males, bridges head and wider shoulders */}
                 <rect x="35" y="46" width="10" height="8" fill={skinTone} />
-                {/* Broad shoulders */}
-                <path d="M16 54 Q16 47 24 44 L40 42 L56 44 Q64 47 64 54 L66 90 L14 90 Z" fill={shirtColor} />
-                {/* Arms — start from the wider shoulder position */}
+                {/* Shirt — stops at waist */}
+                <path d="M16 54 Q16 47 24 44 L40 42 L56 44 Q64 47 64 54 L65 68 L15 68 Z" fill={shirtColor} />
+                {/* Trousers */}
+                <path d="M15 68 L65 68 L66 90 L14 90 Z" fill="#3D4255" />
+                {/* Belt */}
+                <rect x="15" y="66" width="50" height="3.5" rx="1" fill="#2A2E3E" opacity="0.85" />
+                {/* Arms */}
                 <path d="M16 56 L4 77 L11 79 L22 63" fill={skinTone} />
                 <path d="M64 56 L76 77 L69 79 L58 63" fill={skinTone} />
-                {/* V-neck collar — slightly wider to match shoulders */}
-                <path d="M33 44 L40 49 L47 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
+                {/* Button-down collar */}
+                <path d="M33 44 L38 52 L40 47 L42 52 L47 44" stroke="white" strokeWidth="1.2" fill="none" opacity="0.6" />
+                {/* Button placket */}
+                <line x1="40" y1="47" x2="40" y2="66" stroke="white" strokeWidth="0.7" opacity="0.3" />
+                <circle cx="40" cy="52" r="1" fill="white" opacity="0.4" />
+                <circle cx="40" cy="57" r="1" fill="white" opacity="0.4" />
+                <circle cx="40" cy="62" r="1" fill="white" opacity="0.4" />
               </>
             ) : (
               <>
