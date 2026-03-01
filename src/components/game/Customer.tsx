@@ -349,8 +349,11 @@ export default function Customer({
                 <path d="M16 54 Q16 47 24 44 L40 42 L56 44 Q64 47 64 54 L65 68 L15 68 Z" fill={shirtColor} />
                 {/* Jeans — denim blue reads immediately as trousers */}
                 <path d="M15 68 L65 68 L66 90 L14 90 Z" fill="#4A6FA5" />
-                {/* Seam line — clean 1px separator, no chunky belt */}
+                {/* Seam line — clean 1px separator */}
                 <line x1="15" y1="68" x2="65" y2="68" stroke="#2C3E5A" strokeWidth="1" opacity="0.4" />
+                {/* Crotch arch + inseam — makes two distinct trouser legs readable */}
+                <path d="M34 68 Q40 75 46 68" stroke="#2C3E5A" strokeWidth="1.5" fill="none" opacity="0.55" />
+                <line x1="40" y1="75" x2="40" y2="90" stroke="#2C3E5A" strokeWidth="1.2" opacity="0.45" />
                 {/* Arms */}
                 <path d="M16 56 L4 77 L11 79 L22 63" fill={skinTone} />
                 <path d="M64 56 L76 77 L69 79 L58 63" fill={skinTone} />
