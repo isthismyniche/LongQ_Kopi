@@ -312,18 +312,9 @@ export default function GameOverModal({
 
                 {/* Compact Game Over header — returning players only (not captured in image) */}
                 {isReturningPlayer && (
-                  <div className="pb-3 mb-1 border-b border-kopi-brown/10">
-                    <p className="font-display text-2xl font-bold text-hawker-red">Game Over!</p>
-                    <p className="font-display text-5xl font-bold text-kopi-brown leading-none mt-0.5">{score}</p>
-                    <p className="text-xs text-kopi-brown/50 mt-1">
-                      {drinksServed} drinks · {avgSeconds}s avg
-                    </p>
-                    {rank !== null && rank <= 100 && (
-                      <p className="text-xs font-display font-bold mt-1" style={{ color: theme.accent }}>
-                        #{rank} all-time 🏆
-                      </p>
-                    )}
-                  </div>
+                  <p className="font-display text-2xl font-bold text-hawker-red pb-3 mb-1 border-b border-kopi-brown/10">
+                    Game Over!
+                  </p>
                 )}
 
                 {/* Score card — captured by html2canvas */}
