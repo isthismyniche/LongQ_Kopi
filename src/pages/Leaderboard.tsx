@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import PageWrapper from '../components/ui/PageWrapper'
 import BackButton from '../components/ui/BackButton'
 import { getLeaderboard, type LeaderboardEntry } from '../utils/leaderboard'
@@ -6,6 +6,8 @@ import { getLeaderboard, type LeaderboardEntry } from '../utils/leaderboard'
 export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [showNote, setShowNote] = useState(false)
+  const toggleNote = useCallback(() => setShowNote(v => !v), [])
 
   useEffect(() => {
     getLeaderboard()
@@ -84,6 +86,25 @@ export default function Leaderboard() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Expandable note about leaderboard methodology */}
+            <div className="mt-4 text-center">
+              <button
+                onClick={toggleNote}
+                className="inline-flex items-center gap-1 text-xs text-kopi-brown/40 hover:text-kopi-brown/60 transition-colors"
+              >
+                <span>{showNote ? '▾' : '▸'}</span>
+                About this leaderboard
+              </button>
+              {showNote && (
+                <p className="mt-2 text-xs text-kopi-brown/50 leading-relaxed px-2">
+                  Previously, every score submitted was recorded here individually.
+                  From March 2026, each player's personal best counts once —
+                  so the top 10 reflects 10 distinct players. Earlier scores remain
+                  and are each treated as a separate entry.
+                </p>
+              )}
             </div>
           </div>
         )}

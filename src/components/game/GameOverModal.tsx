@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import html2canvas from 'html2canvas'
-import { saveScore } from '../../utils/leaderboard'
+import { saveScore, getRank } from '../../utils/leaderboard'
 import { shareScore } from '../../utils/shareScore'
 
 interface GameOverModalProps {
@@ -45,7 +45,13 @@ export default function GameOverModal({
   const [cardError, setCardError] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const [rank, setRank] = useState<number | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+
+  // Fetch all-time rank as soon as the modal appears
+  useEffect(() => {
+    getRank(score).then(setRank)
+  }, [score])
   const datetime = useRef(new Date().toISOString()).current
 
   const theme = LEVEL_THEMES[level] ?? LEVEL_THEMES[1]
@@ -170,7 +176,16 @@ export default function GameOverModal({
                 <p className="text-[11px] text-kopi-brown/50">avg per drink</p>
               </div>
             </div>
-            <p className="text-xs text-kopi-brown/40 mb-6">{formattedDate}</p>
+            <p className="text-xs text-kopi-brown/40 mb-3">{formattedDate}</p>
+
+            {rank !== null && rank <= 100 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-warm-yellow/50 border border-warm-yellow/70 mb-3">
+                <span className="text-base">🏆</span>
+                <p className="text-xs font-display font-bold text-kopi-brown text-left leading-tight">
+                  You're #{rank} all-time! Save your score to register your rank.
+                </p>
+              </div>
+            )}
 
             <div className="flex flex-col gap-3">
               <button
@@ -205,9 +220,15 @@ export default function GameOverModal({
 
             {!saved ? (
               <div className="space-y-4">
-                <p className="text-sm text-kopi-brown/60 mb-2">
-                  Enter your name to save your score and generate a shareable result card.
-                </p>
+                {rank !== null && rank <= 100 ? (
+                  <p className="text-sm font-display font-bold" style={{ color: theme.accent }}>
+                    No. {rank} all-time — enter your name to lock it in.
+                  </p>
+                ) : (
+                  <p className="text-sm text-kopi-brown/60 mb-2">
+                    Enter your name to save your score and generate a shareable result card.
+                  </p>
+                )}
                 <input
                   type="text"
                   placeholder="Enter your name"
@@ -295,6 +316,11 @@ export default function GameOverModal({
                     </div>
 
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
+                    {rank !== null && rank <= 100 && (
+                      <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
+                        No. {rank} in all-time leaderboard
+                      </p>
+                    )}
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>
                       Can you beat my score?
                     </p>
