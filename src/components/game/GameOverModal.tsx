@@ -92,9 +92,9 @@ export default function GameOverModal({
     return () => cancelAnimationFrame(rafId)
   }, [saved, score])
 
-  // ── Confetti burst for top-100 ───────────────────────────────────────────────
+  // ── Confetti burst for top-40 ────────────────────────────────────────────────
   useEffect(() => {
-    if (!saved || rank === null || rank > 100) return
+    if (!saved || rank === null || rank > 40) return
     const timer = setTimeout(() => {
       confetti({
         particleCount: 80,
@@ -232,7 +232,7 @@ export default function GameOverModal({
             </div>
             <p className="text-xs text-kopi-brown/40 mb-3">{formattedDate}</p>
 
-            {rank !== null && rank <= 100 && (
+            {rank !== null && rank <= 40 && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-warm-yellow/50 border border-warm-yellow/70 mb-3">
                 <span className="text-base">🏆</span>
                 <p className="text-xs font-display font-bold text-kopi-brown text-left leading-tight">
@@ -278,7 +278,7 @@ export default function GameOverModal({
                   <p className="text-sm text-kopi-brown/60">
                     Enter a new name — your card will be regenerated.
                   </p>
-                ) : rank !== null && rank <= 100 ? (
+                ) : rank !== null && rank <= 40 ? (
                   <p className="text-sm font-display font-bold" style={{ color: theme.accent }}>
                     No. {rank} all-time — enter your name to lock it in.
                   </p>
@@ -356,7 +356,7 @@ export default function GameOverModal({
                   )}
 
                   {/* Rank badge */}
-                  {rank !== null && rank <= 100 && (
+                  {rank !== null && rank <= 40 && (
                     <motion.div
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mt-2"
                       style={{ backgroundColor: theme.badgeBg }}
@@ -416,7 +416,7 @@ export default function GameOverModal({
                         <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
                       </div>
                       <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
-                      {rank !== null && rank <= 100 && (
+                      {rank !== null && rank <= 40 && (
                         <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
                           No. {rank} in all-time leaderboard
                         </p>

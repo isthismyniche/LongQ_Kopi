@@ -94,7 +94,7 @@ export async function saveScore(entry: LeaderboardEntry): Promise<void> {
 
 /**
  * Returns this score's all-time rank among unique players (best score per device).
- * Rank 1 = highest score. Returns 999 on error so the top-100 banner is safely hidden.
+ * Rank 1 = highest score. Returns 999 on error so the top-40 banner is safely hidden.
  */
 export async function getRank(score: number): Promise<number> {
   if (!isSupabaseConfigured()) {
