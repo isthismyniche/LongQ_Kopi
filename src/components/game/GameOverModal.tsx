@@ -324,53 +324,39 @@ export default function GameOverModal({
               /* ── Card view ──────────────────────────────────────────────── */
               <div className="space-y-3">
 
-                {/* Score reveal header */}
-                <div className="pb-3 border-b border-kopi-brown/10">
-                  {isReturningPlayer && (
-                    <p className="font-display text-xl font-bold text-hawker-red mb-1">Game Over!</p>
-                  )}
+                {/* Header */}
+                {isReturningPlayer && (
+                  <p className="font-display text-xl font-bold text-hawker-red">Game Over!</p>
+                )}
 
-                  {/* Animated count-up */}
+                {/* Personal best badge */}
+                {isPersonalBest && (
                   <motion.p
-                    className="font-display text-6xl font-bold leading-none"
+                    className="text-xs font-display font-bold"
                     style={{ color: theme.accent }}
-                    initial={{ scale: 0.75, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', damping: 14, stiffness: 200 }}
+                    initial={{ y: -6, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4, type: 'spring', damping: 14 }}
                   >
-                    {displayScore}
+                    🎉 New personal best!
                   </motion.p>
-                  <p className="text-xs text-kopi-brown/50 mt-1">points</p>
+                )}
 
-                  {/* Personal best badge */}
-                  {isPersonalBest && (
-                    <motion.p
-                      className="text-xs font-display font-bold mt-1.5"
-                      style={{ color: theme.accent }}
-                      initial={{ y: -6, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.4, type: 'spring', damping: 14 }}
-                    >
-                      🎉 New personal best!
-                    </motion.p>
-                  )}
-
-                  {/* Rank badge */}
-                  {rank !== null && rank <= 40 && (
-                    <motion.div
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mt-2"
-                      style={{ backgroundColor: theme.badgeBg }}
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: 'spring', delay: 0.8, damping: 12, stiffness: 220 }}
-                    >
-                      <span className="text-sm">🏆</span>
-                      <span className="font-display font-bold text-sm" style={{ color: theme.accent }}>
-                        #{rank} all-time
-                      </span>
-                    </motion.div>
-                  )}
-                </div>
+                {/* Rank badge */}
+                {rank !== null && rank <= 40 && (
+                  <motion.div
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full"
+                    style={{ backgroundColor: theme.badgeBg }}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', delay: 0.8, damping: 12, stiffness: 220 }}
+                  >
+                    <span className="text-sm">🏆</span>
+                    <span className="font-display font-bold text-sm" style={{ color: theme.accent }}>
+                      #{rank} all-time
+                    </span>
+                  </motion.div>
+                )}
 
                 {/* Score card — slide-up entrance, captured by html2canvas */}
                 <motion.div
@@ -405,7 +391,7 @@ export default function GameOverModal({
                       </div>
                       <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
                       <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{savedNameRef.current}</p>
-                      <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{score}</p>
+                      <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{displayScore}</p>
                       <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
                       <div style={{
                         display: 'flex', justifyContent: 'center',
