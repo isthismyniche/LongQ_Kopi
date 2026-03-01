@@ -317,7 +317,7 @@ export default function GameOverModal({
                   onClick={handleShare}
                   disabled={!cardReady}
                   aria-label="Share score"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
+                  className="mt-1 w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
                     text-white font-display font-bold cursor-pointer transition-opacity
                     disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ backgroundColor: cardReady ? theme.accent : undefined }}
