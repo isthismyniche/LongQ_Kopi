@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import html2canvas from 'html2canvas'
+import confetti from 'canvas-confetti'
 import { saveScore, getRank } from '../../utils/leaderboard'
 import { shareScore } from '../../utils/shareScore'
 
@@ -20,12 +21,14 @@ const LEVEL_THEMES: Record<number, {
   badgeBg: string
   emoji: string
 }> = {
-  1: { accent: '#C41E3A', border: 'rgba(196,30,58,0.22)',   badgeBg: 'rgba(196,30,58,0.08)',  emoji: '☀️' },
-  2: { accent: '#D4751E', border: 'rgba(212,117,30,0.22)',  badgeBg: 'rgba(212,117,30,0.08)', emoji: '🌅' },
-  3: { accent: '#B8860B', border: 'rgba(184,134,11,0.22)',  badgeBg: 'rgba(184,134,11,0.08)', emoji: '🌞' },
-  4: { accent: '#7B3FA0', border: 'rgba(123,63,160,0.22)',  badgeBg: 'rgba(123,63,160,0.08)', emoji: '🍵' },
-  5: { accent: '#1E3A6E', border: 'rgba(30,58,110,0.22)',   badgeBg: 'rgba(30,58,110,0.08)',  emoji: '🌙' },
+  1: { accent: '#C41E3A', border: 'rgba(196,30,58,0.22)',   badgeBg: 'rgba(196,30,58,0.12)',  emoji: '☀️' },
+  2: { accent: '#D4751E', border: 'rgba(212,117,30,0.22)',  badgeBg: 'rgba(212,117,30,0.12)', emoji: '🌅' },
+  3: { accent: '#B8860B', border: 'rgba(184,134,11,0.22)',  badgeBg: 'rgba(184,134,11,0.12)', emoji: '🌞' },
+  4: { accent: '#7B3FA0', border: 'rgba(123,63,160,0.22)',  badgeBg: 'rgba(123,63,160,0.12)', emoji: '🍵' },
+  5: { accent: '#1E3A6E', border: 'rgba(30,58,110,0.22)',   badgeBg: 'rgba(30,58,110,0.12)',  emoji: '🌙' },
 }
+
+const PERSONAL_BEST_KEY = 'longq_kopi_personal_best'
 
 export default function GameOverModal({
   score,
@@ -36,44 +39,74 @@ export default function GameOverModal({
   onPlayAgain,
   onMainMenu,
 }: GameOverModalProps) {
-  // Detect returning player once on mount — never changes during modal lifetime
+  // Computed once on mount — never changes during modal lifetime
   const isReturningPlayer = useRef(
     Boolean(localStorage.getItem('longq_kopi_player_name')?.trim())
   ).current
+  const prevBest = useRef(parseInt(localStorage.getItem(PERSONAL_BEST_KEY) ?? '0', 10)).current
+  const isPersonalBest = useRef(prevBest > 0 && score > prevBest).current
 
-  // Returning players skip the game-over screen and land directly on the card
   const [showShareForm, setShowShareForm] = useState(() => isReturningPlayer)
   const [playerName, setPlayerName] = useState(
     () => localStorage.getItem('longq_kopi_player_name') ?? ''
   )
   const [saved, setSaved] = useState(false)
   const [changingName, setChangingName] = useState(false)
+  const [displayScore, setDisplayScore] = useState(0)
   const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [cardError, setCardError] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [rank, setRank] = useState<number | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
-  const savedNameRef = useRef('')   // name tied to the most-recently saved card
+  const savedNameRef = useRef('')
   const datetime = useRef(new Date().toISOString()).current
 
   const theme = LEVEL_THEMES[level] ?? LEVEL_THEMES[1]
 
   const formattedDate = new Date(datetime).toLocaleDateString('en-SG', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   })
 
   const avgSeconds = Math.round(avgTime * 10) / 10
 
-  // Fetch all-time rank immediately — shown on both screens
+  // ── Rank fetch ──────────────────────────────────────────────────────────────
   useEffect(() => {
     getRank(score).then(setRank)
   }, [score])
 
+  // ── Score count-up (ease-out cubic, 1 s) ────────────────────────────────────
+  useEffect(() => {
+    if (!saved) return
+    const start = performance.now()
+    const duration = 1000
+    let rafId: number
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplayScore(Math.round(eased * score))
+      if (progress < 1) rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [saved, score])
+
+  // ── Confetti burst for top-100 ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!saved || rank === null || rank > 100) return
+    const timer = setTimeout(() => {
+      confetti({
+        particleCount: 80,
+        spread: 65,
+        origin: { y: 0.5 },
+        colors: ['#C41E3A', '#D4751E', '#B8860B', '#FFF8E7', '#5C3D2E'],
+      })
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [saved, rank])
+
+  // ── Save + generate ──────────────────────────────────────────────────────────
   const handleSaveAndGenerate = useCallback(async () => {
     if (!playerName.trim() || generating) return
     setGenerating(true)
@@ -86,6 +119,8 @@ export default function GameOverModal({
         avgTime: avgSeconds,
       })
       localStorage.setItem('longq_kopi_player_name', playerName.trim())
+      const currentBest = parseInt(localStorage.getItem(PERSONAL_BEST_KEY) ?? '0', 10)
+      if (score > currentBest) localStorage.setItem(PERSONAL_BEST_KEY, score.toString())
     } catch (err) {
       console.error('Failed to save score:', err)
     } finally {
@@ -96,61 +131,47 @@ export default function GameOverModal({
     }
   }, [playerName, score, drinksServed, avgSeconds, datetime, generating])
 
-  // Auto-save for returning players the moment the modal appears
+  // Auto-save for returning players on mount
   useEffect(() => {
-    if (isReturningPlayer) {
-      handleSaveAndGenerate()
-    }
+    if (isReturningPlayer) handleSaveAndGenerate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // intentionally mount-only
+  }, [])
 
-  // Capture the score card as an image after it renders
+  // ── Card capture (delayed 1.1 s so count-up completes first) ────────────────
   useEffect(() => {
     if (!saved || cardBlob || cardError) return
-
     let cancelled = false
-
     const capture = async () => {
+      // Wait for count-up animation before enabling the share button
+      await new Promise<void>(resolve => setTimeout(resolve, 1100))
       await new Promise<void>(resolve =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
       )
       if (cancelled || !cardRef.current) return
-
       try {
         const canvas = await html2canvas(cardRef.current, {
-          backgroundColor: '#FFF8E7',
-          scale: 2,
-          logging: false,
+          backgroundColor: '#FFF8E7', scale: 2, logging: false,
         })
         if (cancelled) return
-        canvas.toBlob(
-          blob => {
-            if (!cancelled) {
-              if (blob) setCardBlob(blob)
-              else setCardError(true)
-            }
-          },
-          'image/png',
-        )
+        canvas.toBlob(blob => {
+          if (!cancelled) {
+            if (blob) setCardBlob(blob)
+            else setCardError(true)
+          }
+        }, 'image/png')
       } catch {
         if (!cancelled) setCardError(true)
       }
     }
-
     capture()
     return () => { cancelled = true }
   }, [saved, cardBlob, cardError])
 
+  // ── Share ────────────────────────────────────────────────────────────────────
   const handleShare = useCallback(async () => {
     if (!cardBlob) return
     await shareScore(
-      {
-        name: playerName.trim(),
-        score,
-        drinksServed,
-        avgSeconds,
-        cardImageBlob: cardBlob,
-      },
+      { name: playerName.trim(), score, drinksServed, avgSeconds, cardImageBlob: cardBlob },
       () => {
         setShowTooltip(true)
         setTimeout(() => setShowTooltip(false), 4000)
@@ -158,27 +179,25 @@ export default function GameOverModal({
     )
   }, [cardBlob, playerName, score, drinksServed, avgSeconds])
 
-  // Enter name-change mode
+  // ── Name change ──────────────────────────────────────────────────────────────
   const handleChangeName = useCallback(() => {
     setChangingName(true)
     setSaved(false)
     setCardBlob(null)
     setCardError(false)
-    // playerName stays pre-filled for editing
+    setDisplayScore(0)
   }, [])
 
-  // Cancel name change — restore the saved name and re-show the card
   const handleCancelChangeName = useCallback(() => {
     setPlayerName(savedNameRef.current)
     setChangingName(false)
     setSaved(true)
-    setCardBlob(null)   // triggers re-capture with restored name
+    setCardBlob(null)
     setCardError(false)
+    setDisplayScore(0)
   }, [])
 
   const cardReady = cardBlob !== null
-
-  // True when the name entry form should be visible
   const showNameForm = (!saved && !isReturningPlayer) || changingName
 
   return (
@@ -195,10 +214,9 @@ export default function GameOverModal({
         className="bg-cream rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl overflow-y-auto max-h-[90vh]"
       >
         {!showShareForm ? (
-          /* ── GAME OVER SCREEN — new players only ─────────────────────── */
+          /* ── GAME OVER SCREEN — new players only ──────────────────────────── */
           <div className="text-center">
             <h2 className="font-display text-4xl font-bold text-hawker-red mb-2">Game Over!</h2>
-
             <p className="font-display text-6xl font-bold text-kopi-brown mb-1">{score}</p>
             <p className="text-kopi-brown/60 mb-2">points</p>
             <div className="flex justify-center gap-4 mb-2">
@@ -248,16 +266,14 @@ export default function GameOverModal({
             </div>
           </div>
         ) : (
-          /* ── SHARE VIEW — returning players (direct) + new players (after clicking Share Score) */
+          /* ── SHARE VIEW ───────────────────────────────────────────────────── */
           <div className="text-center">
-
             {showNameForm ? (
               /* Name entry / name-change form */
               <div className="space-y-4">
                 <h3 className="font-display text-2xl font-bold mb-2" style={{ color: theme.accent }}>
                   {changingName ? 'Change Name' : 'Share Your Score'}
                 </h3>
-
                 {changingName ? (
                   <p className="text-sm text-kopi-brown/60">
                     Enter a new name — your card will be regenerated.
@@ -271,7 +287,6 @@ export default function GameOverModal({
                     Enter your name to save your score and generate a shareable result card.
                   </p>
                 )}
-
                 <input
                   type="text"
                   placeholder="Enter your name"
@@ -294,9 +309,8 @@ export default function GameOverModal({
                   <button
                     onClick={handleSaveAndGenerate}
                     disabled={!playerName.trim() || generating}
-                    className="flex-1 px-4 py-2 rounded-xl text-white
-                      font-display font-bold cursor-pointer transition-opacity
-                      disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2 rounded-xl text-white font-display font-bold
+                      cursor-pointer transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ backgroundColor: theme.accent }}
                   >
                     {generating ? 'Saving…' : 'Save & Share'}
@@ -307,71 +321,115 @@ export default function GameOverModal({
               /* Returning player: auto-save in progress */
               <p className="py-10 text-kopi-brown/50 text-sm">Setting up your card…</p>
             ) : (
-              /* Card view */
+              /* ── Card view ──────────────────────────────────────────────── */
               <div className="space-y-3">
 
-                {/* Compact Game Over header — returning players only (not captured in image) */}
-                {isReturningPlayer && (
-                  <p className="font-display text-2xl font-bold text-hawker-red pb-3 mb-1 border-b border-kopi-brown/10">
-                    Game Over!
-                  </p>
-                )}
+                {/* Score reveal header */}
+                <div className="pb-3 border-b border-kopi-brown/10">
+                  {isReturningPlayer && (
+                    <p className="font-display text-xl font-bold text-hawker-red mb-1">Game Over!</p>
+                  )}
 
-                {/* Score card — captured by html2canvas */}
-                <div
-                  ref={cardRef}
-                  style={{
-                    width: 300,
-                    backgroundColor: '#FFF8E7',
-                    borderRadius: 16,
-                    border: `2px solid ${theme.border}`,
-                    margin: '0 auto',
-                    fontFamily: '"Fredoka", sans-serif',
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div style={{ height: 5, backgroundColor: theme.accent }} />
-                  <div style={{ padding: 20, textAlign: 'center' }}>
-                    <div style={{
-                      display: 'inline-block',
-                      backgroundColor: theme.badgeBg,
-                      borderRadius: 20,
-                      padding: '3px 10px',
-                      marginBottom: 10,
-                    }}>
-                      <span style={{ fontSize: 11, color: theme.accent, fontWeight: 600 }}>
-                        {theme.emoji} {levelName}
+                  {/* Animated count-up */}
+                  <motion.p
+                    className="font-display text-6xl font-bold leading-none"
+                    style={{ color: theme.accent }}
+                    initial={{ scale: 0.75, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', damping: 14, stiffness: 200 }}
+                  >
+                    {displayScore}
+                  </motion.p>
+                  <p className="text-xs text-kopi-brown/50 mt-1">points</p>
+
+                  {/* Personal best badge */}
+                  {isPersonalBest && (
+                    <motion.p
+                      className="text-xs font-display font-bold mt-1.5"
+                      style={{ color: theme.accent }}
+                      initial={{ y: -6, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', damping: 14 }}
+                    >
+                      🎉 New personal best!
+                    </motion.p>
+                  )}
+
+                  {/* Rank badge */}
+                  {rank !== null && rank <= 100 && (
+                    <motion.div
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mt-2"
+                      style={{ backgroundColor: theme.badgeBg }}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', delay: 0.8, damping: 12, stiffness: 220 }}
+                    >
+                      <span className="text-sm">🏆</span>
+                      <span className="font-display font-bold text-sm" style={{ color: theme.accent }}>
+                        #{rank} all-time
                       </span>
-                    </div>
-                    <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
-                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{savedNameRef.current}</p>
-                    <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{score}</p>
-                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      gap: 12,
-                      margin: '10px 0',
-                      color: 'rgba(92, 61, 46, 0.6)',
-                    }}>
-                      <span style={{ fontSize: 12 }}>{drinksServed} drinks</span>
-                      <span style={{ fontSize: 12 }}>|</span>
-                      <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
-                    </div>
-                    <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
-                    {rank !== null && rank <= 100 && (
-                      <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
-                        No. {rank} in all-time leaderboard
-                      </p>
-                    )}
-                    <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>
-                      Can you beat my score?
-                    </p>
-                    <p style={{ fontSize: 11, color: theme.accent, margin: '8px 0 0', fontWeight: 600 }}>
-                      longqkopi.vercel.app
-                    </p>
-                  </div>
+                    </motion.div>
+                  )}
                 </div>
+
+                {/* Score card — slide-up entrance, captured by html2canvas */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ type: 'spring', damping: 20, stiffness: 200, delay: 0.15 }}
+                >
+                  <div
+                    ref={cardRef}
+                    style={{
+                      width: 300,
+                      backgroundColor: '#FFF8E7',
+                      borderRadius: 16,
+                      border: `2px solid ${theme.border}`,
+                      margin: '0 auto',
+                      fontFamily: '"Fredoka", sans-serif',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ height: 5, backgroundColor: theme.accent }} />
+                    <div style={{ padding: 20, textAlign: 'center' }}>
+                      <div style={{
+                        display: 'inline-block',
+                        backgroundColor: theme.badgeBg,
+                        borderRadius: 20,
+                        padding: '3px 10px',
+                        marginBottom: 10,
+                      }}>
+                        <span style={{ fontSize: 11, color: theme.accent, fontWeight: 600 }}>
+                          {theme.emoji} {levelName}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
+                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{savedNameRef.current}</p>
+                      <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{score}</p>
+                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
+                      <div style={{
+                        display: 'flex', justifyContent: 'center',
+                        gap: 12, margin: '10px 0', color: 'rgba(92, 61, 46, 0.6)',
+                      }}>
+                        <span style={{ fontSize: 12 }}>{drinksServed} drinks</span>
+                        <span style={{ fontSize: 12 }}>|</span>
+                        <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
+                      </div>
+                      <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
+                      {rank !== null && rank <= 100 && (
+                        <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
+                          No. {rank} in all-time leaderboard
+                        </p>
+                      )}
+                      <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>
+                        Can you beat my score?
+                      </p>
+                      <p style={{ fontSize: 11, color: theme.accent, margin: '8px 0 0', fontWeight: 600 }}>
+                        longqkopi.vercel.app
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
 
                 {/* Change name */}
                 <button
@@ -381,16 +439,20 @@ export default function GameOverModal({
                   Not {savedNameRef.current}? Change name
                 </button>
 
-                {/* Status messages */}
+                {/* Status */}
                 {cardError && (
                   <p className="text-xs text-hawker-red/80 text-center">Could not generate score card</p>
                 )}
                 {!cardReady && !cardError && (
-                  <p className="text-xs text-kopi-brown/50 text-center">Generating card…</p>
+                  <p className="text-xs text-kopi-brown/50 text-center">Preparing your card…</p>
                 )}
 
-                {/* Share button */}
-                <button
+                {/* Share button — pulses when it becomes ready */}
+                <motion.button
+                  key={cardReady ? 'ready' : 'loading'}
+                  initial={cardReady ? { scale: 0.93, opacity: 0.7 } : false}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 14 }}
                   onClick={handleShare}
                   disabled={!cardReady}
                   aria-label="Share score"
@@ -409,7 +471,7 @@ export default function GameOverModal({
                     <line x1="12" y1="2" x2="12" y2="15" />
                   </svg>
                   Share
-                </button>
+                </motion.button>
 
                 {/* Clipboard fallback tooltip */}
                 <AnimatePresence>
@@ -430,8 +492,8 @@ export default function GameOverModal({
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={onPlayAgain}
-                    className="flex-1 px-4 py-2 rounded-xl text-white
-                      font-display font-bold cursor-pointer transition-opacity hover:opacity-90"
+                    className="flex-1 px-4 py-2 rounded-xl text-white font-display font-bold
+                      cursor-pointer transition-opacity hover:opacity-90"
                     style={{ backgroundColor: theme.accent }}
                   >
                     Play Again
