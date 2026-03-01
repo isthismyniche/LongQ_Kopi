@@ -20,12 +20,14 @@ const LEVEL_THEMES: Record<number, {
   border: string
   badgeBg: string
   emoji: string
+  accentFaint: string
+  accentGlow: string
 }> = {
-  1: { accent: '#C41E3A', border: 'rgba(196,30,58,0.22)',   badgeBg: 'rgba(196,30,58,0.12)',  emoji: '☀️' },
-  2: { accent: '#D4751E', border: 'rgba(212,117,30,0.22)',  badgeBg: 'rgba(212,117,30,0.12)', emoji: '🌅' },
-  3: { accent: '#B8860B', border: 'rgba(184,134,11,0.22)',  badgeBg: 'rgba(184,134,11,0.12)', emoji: '🌞' },
-  4: { accent: '#7B3FA0', border: 'rgba(123,63,160,0.22)',  badgeBg: 'rgba(123,63,160,0.12)', emoji: '🍵' },
-  5: { accent: '#1E3A6E', border: 'rgba(30,58,110,0.22)',   badgeBg: 'rgba(30,58,110,0.12)',  emoji: '🌙' },
+  1: { accent: '#C41E3A', border: 'rgba(196,30,58,0.22)',   badgeBg: 'rgba(196,30,58,0.12)',  emoji: '☀️', accentFaint: 'rgba(196,30,58,0.09)',  accentGlow: 'rgba(196,30,58,0.30)' },
+  2: { accent: '#D4751E', border: 'rgba(212,117,30,0.22)',  badgeBg: 'rgba(212,117,30,0.12)', emoji: '🌅', accentFaint: 'rgba(212,117,30,0.09)', accentGlow: 'rgba(212,117,30,0.30)' },
+  3: { accent: '#B8860B', border: 'rgba(184,134,11,0.22)',  badgeBg: 'rgba(184,134,11,0.12)', emoji: '🌞', accentFaint: 'rgba(184,134,11,0.09)', accentGlow: 'rgba(184,134,11,0.30)' },
+  4: { accent: '#7B3FA0', border: 'rgba(123,63,160,0.22)',  badgeBg: 'rgba(123,63,160,0.12)', emoji: '🍵', accentFaint: 'rgba(123,63,160,0.09)', accentGlow: 'rgba(123,63,160,0.30)' },
+  5: { accent: '#1E3A6E', border: 'rgba(30,58,110,0.22)',   badgeBg: 'rgba(30,58,110,0.12)',  emoji: '🌙', accentFaint: 'rgba(30,58,110,0.09)',  accentGlow: 'rgba(30,58,110,0.30)'  },
 }
 
 const PERSONAL_BEST_KEY = 'longq_kopi_personal_best'
@@ -368,7 +370,7 @@ export default function GameOverModal({
                     ref={cardRef}
                     style={{
                       width: 300,
-                      backgroundColor: '#FFF8E7',
+                      background: `radial-gradient(ellipse at 65% 35%, ${theme.accentFaint} 0%, #FFF8E7 70%)`,
                       borderRadius: 16,
                       border: `2px solid ${theme.border}`,
                       margin: '0 auto',
@@ -376,41 +378,81 @@ export default function GameOverModal({
                       overflow: 'hidden',
                     }}
                   >
-                    <div style={{ height: 5, backgroundColor: theme.accent }} />
-                    <div style={{ padding: 20, textAlign: 'center' }}>
+                    {/* Top accent stripe */}
+                    <div style={{ height: 6, backgroundColor: theme.accent }} />
+
+                    <div style={{ padding: '18px 20px 22px', textAlign: 'center' }}>
+                      {/* Level badge */}
                       <div style={{
-                        display: 'inline-block',
-                        backgroundColor: theme.badgeBg,
-                        borderRadius: 20,
-                        padding: '3px 10px',
-                        marginBottom: 10,
+                        display: 'inline-block', backgroundColor: theme.badgeBg,
+                        borderRadius: 20, padding: '3px 10px', marginBottom: 6,
                       }}>
                         <span style={{ fontSize: 11, color: theme.accent, fontWeight: 600 }}>
                           {theme.emoji} {levelName}
                         </span>
                       </div>
-                      <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
-                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{savedNameRef.current}</p>
-                      <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{displayScore}</p>
-                      <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
-                      <div style={{
-                        display: 'flex', justifyContent: 'center',
-                        gap: 12, margin: '10px 0', color: 'rgba(92, 61, 46, 0.6)',
-                      }}>
-                        <span style={{ fontSize: 12 }}>{drinksServed} drinks</span>
-                        <span style={{ fontSize: 12 }}>|</span>
-                        <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
-                      </div>
-                      <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
-                      {rank !== null && rank <= 40 && (
-                        <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
-                          No. {rank} in all-time leaderboard
-                        </p>
-                      )}
-                      <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>
-                        Can you beat my score?
+
+                      {/* Title */}
+                      <p style={{ fontSize: 17, fontWeight: 700, color: '#5C3D2E', margin: '0 0 4px' }}>LongQ Kopi</p>
+
+                      {/* Kopi cup illustration */}
+                      <svg width="64" height="54" viewBox="0 0 64 54" style={{ margin: '4px auto 6px', display: 'block' }}>
+                        {/* Saucer */}
+                        <ellipse cx="28" cy="51" rx="22" ry="3" fill={theme.accent} fillOpacity="0.12" />
+                        {/* Cup body base fill */}
+                        <path d="M8 10 L13 45 L43 45 L48 10 Z" fill="#FFF8E7" />
+                        {/* Coffee fill — lower portion */}
+                        <path d="M11 29 L13 45 L43 45 L45 29 Z" fill={theme.accent} fillOpacity="0.2" />
+                        {/* Cup body outline */}
+                        <path d="M8 10 L13 45 L43 45 L48 10" stroke={theme.accent} strokeWidth="1.8" fill="none" strokeLinejoin="round" />
+                        <line x1="13" y1="45" x2="43" y2="45" stroke={theme.accent} strokeWidth="1.8" />
+                        {/* Rim */}
+                        <ellipse cx="28" cy="10" rx="20" ry="4.5" fill="#FFF8E7" stroke={theme.accent} strokeWidth="1.8" />
+                        {/* Handle */}
+                        <path d="M48 19 C60 19 60 38 48 38" stroke={theme.accent} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+                      </svg>
+
+                      {/* Name */}
+                      <p style={{ fontSize: 15, fontWeight: 700, color: theme.accent, margin: '0 0 2px' }}>
+                        {savedNameRef.current}
                       </p>
-                      <p style={{ fontSize: 11, color: theme.accent, margin: '8px 0 0', fontWeight: 600 }}>
+
+                      {/* Score */}
+                      <p style={{
+                        fontSize: 66, fontWeight: 700, color: theme.accent,
+                        margin: '0', lineHeight: 1.05,
+                        textShadow: `0 2px 12px ${theme.accentGlow}`,
+                      }}>
+                        {displayScore}
+                      </p>
+                      <p style={{ fontSize: 13, color: 'rgba(92,61,46,0.5)', margin: '0 0 12px' }}>points</p>
+
+                      {/* Stats pills */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: 8, margin: '0 0 10px' }}>
+                        <div style={{ background: 'rgba(92,61,46,0.08)', borderRadius: 20, padding: '4px 11px' }}>
+                          <span style={{ fontSize: 12, color: 'rgba(92,61,46,0.7)', fontWeight: 600 }}>{drinksServed} drinks</span>
+                        </div>
+                        <div style={{ background: 'rgba(92,61,46,0.08)', borderRadius: 20, padding: '4px 11px' }}>
+                          <span style={{ fontSize: 12, color: 'rgba(92,61,46,0.7)', fontWeight: 600 }}>{avgSeconds}s avg</span>
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <p style={{ fontSize: 11, color: 'rgba(92,61,46,0.35)', margin: '0 0 8px' }}>{formattedDate}</p>
+
+                      {/* Rank badge pill */}
+                      {rank !== null && rank <= 40 && (
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          background: theme.badgeBg, borderRadius: 20, padding: '4px 12px', margin: '0 0 8px',
+                        }}>
+                          <span style={{ fontSize: 13 }}>🏆</span>
+                          <span style={{ fontSize: 12, color: theme.accent, fontWeight: 700 }}>No. {rank} all-time</span>
+                        </div>
+                      )}
+
+                      {/* URL */}
+                      <p style={{ fontSize: 11, color: theme.accent, fontWeight: 600, margin: rank !== null && rank <= 40 ? '2px 0 0' : '8px 0 0' }}>
                         longqkopi.vercel.app
                       </p>
                     </div>
