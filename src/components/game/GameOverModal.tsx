@@ -36,22 +36,25 @@ export default function GameOverModal({
   onPlayAgain,
   onMainMenu,
 }: GameOverModalProps) {
-  const [showShareForm, setShowShareForm] = useState(false)
+  // Detect returning player once on mount — never changes during modal lifetime
+  const isReturningPlayer = useRef(
+    Boolean(localStorage.getItem('longq_kopi_player_name')?.trim())
+  ).current
+
+  // Returning players skip the game-over screen and land directly on the card
+  const [showShareForm, setShowShareForm] = useState(() => isReturningPlayer)
   const [playerName, setPlayerName] = useState(
     () => localStorage.getItem('longq_kopi_player_name') ?? ''
   )
   const [saved, setSaved] = useState(false)
+  const [changingName, setChangingName] = useState(false)
   const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [cardError, setCardError] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
   const [rank, setRank] = useState<number | null>(null)
   const cardRef = useRef<HTMLDivElement>(null)
-
-  // Fetch all-time rank as soon as the modal appears
-  useEffect(() => {
-    getRank(score).then(setRank)
-  }, [score])
+  const savedNameRef = useRef('')   // name tied to the most-recently saved card
   const datetime = useRef(new Date().toISOString()).current
 
   const theme = LEVEL_THEMES[level] ?? LEVEL_THEMES[1]
@@ -66,6 +69,11 @@ export default function GameOverModal({
 
   const avgSeconds = Math.round(avgTime * 10) / 10
 
+  // Fetch all-time rank immediately — shown on both screens
+  useEffect(() => {
+    getRank(score).then(setRank)
+  }, [score])
+
   const handleSaveAndGenerate = useCallback(async () => {
     if (!playerName.trim() || generating) return
     setGenerating(true)
@@ -78,16 +86,25 @@ export default function GameOverModal({
         avgTime: avgSeconds,
       })
       localStorage.setItem('longq_kopi_player_name', playerName.trim())
-      setSaved(true)
     } catch (err) {
       console.error('Failed to save score:', err)
-      setSaved(true)
     } finally {
+      savedNameRef.current = playerName.trim()
       setGenerating(false)
+      setSaved(true)
+      setChangingName(false)
     }
   }, [playerName, score, drinksServed, avgSeconds, datetime, generating])
 
-  // Capture the visible card preview after it renders
+  // Auto-save for returning players the moment the modal appears
+  useEffect(() => {
+    if (isReturningPlayer) {
+      handleSaveAndGenerate()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentionally mount-only
+
+  // Capture the score card as an image after it renders
   useEffect(() => {
     if (!saved || cardBlob || cardError) return
 
@@ -121,9 +138,7 @@ export default function GameOverModal({
     }
 
     capture()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [saved, cardBlob, cardError])
 
   const handleShare = useCallback(async () => {
@@ -143,7 +158,28 @@ export default function GameOverModal({
     )
   }, [cardBlob, playerName, score, drinksServed, avgSeconds])
 
+  // Enter name-change mode
+  const handleChangeName = useCallback(() => {
+    setChangingName(true)
+    setSaved(false)
+    setCardBlob(null)
+    setCardError(false)
+    // playerName stays pre-filled for editing
+  }, [])
+
+  // Cancel name change — restore the saved name and re-show the card
+  const handleCancelChangeName = useCallback(() => {
+    setPlayerName(savedNameRef.current)
+    setChangingName(false)
+    setSaved(true)
+    setCardBlob(null)   // triggers re-capture with restored name
+    setCardError(false)
+  }, [])
+
   const cardReady = cardBlob !== null
+
+  // True when the name entry form should be visible
+  const showNameForm = (!saved && !isReturningPlayer) || changingName
 
   return (
     <motion.div
@@ -159,7 +195,7 @@ export default function GameOverModal({
         className="bg-cream rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl overflow-y-auto max-h-[90vh]"
       >
         {!showShareForm ? (
-          /* Main game over screen */
+          /* ── GAME OVER SCREEN — new players only ─────────────────────── */
           <div className="text-center">
             <h2 className="font-display text-4xl font-bold text-hawker-red mb-2">Game Over!</h2>
 
@@ -212,23 +248,30 @@ export default function GameOverModal({
             </div>
           </div>
         ) : (
-          /* Share form */
+          /* ── SHARE VIEW — returning players (direct) + new players (after clicking Share Score) */
           <div className="text-center">
-            <h3 className="font-display text-2xl font-bold mb-2" style={{ color: theme.accent }}>
-              Share Your Score
-            </h3>
 
-            {!saved ? (
+            {showNameForm ? (
+              /* Name entry / name-change form */
               <div className="space-y-4">
-                {rank !== null && rank <= 100 ? (
+                <h3 className="font-display text-2xl font-bold mb-2" style={{ color: theme.accent }}>
+                  {changingName ? 'Change Name' : 'Share Your Score'}
+                </h3>
+
+                {changingName ? (
+                  <p className="text-sm text-kopi-brown/60">
+                    Enter a new name — your card will be regenerated.
+                  </p>
+                ) : rank !== null && rank <= 100 ? (
                   <p className="text-sm font-display font-bold" style={{ color: theme.accent }}>
                     No. {rank} all-time — enter your name to lock it in.
                   </p>
                 ) : (
-                  <p className="text-sm text-kopi-brown/60 mb-2">
+                  <p className="text-sm text-kopi-brown/60">
                     Enter your name to save your score and generate a shareable result card.
                   </p>
                 )}
+
                 <input
                   type="text"
                   placeholder="Enter your name"
@@ -242,7 +285,7 @@ export default function GameOverModal({
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setShowShareForm(false)}
+                    onClick={changingName ? handleCancelChangeName : () => setShowShareForm(false)}
                     className="flex-1 px-4 py-2 rounded-xl bg-gray-200 text-kopi-brown
                       font-display font-bold cursor-pointer transition-colors hover:bg-gray-300"
                   >
@@ -260,9 +303,30 @@ export default function GameOverModal({
                   </button>
                 </div>
               </div>
+            ) : !saved ? (
+              /* Returning player: auto-save in progress */
+              <p className="py-10 text-kopi-brown/50 text-sm">Setting up your card…</p>
             ) : (
+              /* Card view */
               <div className="space-y-3">
-                {/* Score card — this exact div is captured by html2canvas */}
+
+                {/* Compact Game Over header — returning players only (not captured in image) */}
+                {isReturningPlayer && (
+                  <div className="pb-3 mb-1 border-b border-kopi-brown/10">
+                    <p className="font-display text-2xl font-bold text-hawker-red">Game Over!</p>
+                    <p className="font-display text-5xl font-bold text-kopi-brown leading-none mt-0.5">{score}</p>
+                    <p className="text-xs text-kopi-brown/50 mt-1">
+                      {drinksServed} drinks · {avgSeconds}s avg
+                    </p>
+                    {rank !== null && rank <= 100 && (
+                      <p className="text-xs font-display font-bold mt-1" style={{ color: theme.accent }}>
+                        #{rank} all-time 🏆
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Score card — captured by html2canvas */}
                 <div
                   ref={cardRef}
                   style={{
@@ -275,11 +339,8 @@ export default function GameOverModal({
                     overflow: 'hidden',
                   }}
                 >
-                  {/* Accent stripe */}
                   <div style={{ height: 5, backgroundColor: theme.accent }} />
-
                   <div style={{ padding: 20, textAlign: 'center' }}>
-                    {/* Level badge */}
                     <div style={{
                       display: 'inline-block',
                       backgroundColor: theme.badgeBg,
@@ -291,18 +352,10 @@ export default function GameOverModal({
                         {theme.emoji} {levelName}
                       </span>
                     </div>
-
-                    {/* Logo */}
                     <p style={{ fontSize: 18, fontWeight: 700, color: '#5C3D2E', margin: '0 0 10px' }}>LongQ Kopi</p>
-
-                    {/* Player name */}
-                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{playerName.trim()}</p>
-
-                    {/* Score */}
+                    <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>{savedNameRef.current}</p>
                     <p style={{ fontSize: 48, fontWeight: 700, color: theme.accent, margin: '4px 0' }}>{score}</p>
                     <p style={{ fontSize: 14, color: 'rgba(92, 61, 46, 0.6)', margin: 0 }}>points</p>
-
-                    {/* Stats */}
                     <div style={{
                       display: 'flex',
                       justifyContent: 'center',
@@ -314,7 +367,6 @@ export default function GameOverModal({
                       <span style={{ fontSize: 12 }}>|</span>
                       <span style={{ fontSize: 12 }}>{avgSeconds}s avg</span>
                     </div>
-
                     <p style={{ fontSize: 11, color: 'rgba(92, 61, 46, 0.4)', margin: '4px 0 0' }}>{formattedDate}</p>
                     {rank !== null && rank <= 100 && (
                       <p style={{ fontSize: 12, color: theme.accent, fontWeight: 700, margin: '6px 0 2px' }}>
@@ -330,6 +382,14 @@ export default function GameOverModal({
                   </div>
                 </div>
 
+                {/* Change name */}
+                <button
+                  onClick={handleChangeName}
+                  className="text-xs text-kopi-brown/40 hover:text-kopi-brown/60 transition-colors"
+                >
+                  Not {savedNameRef.current}? Change name
+                </button>
+
                 {/* Status messages */}
                 {cardError && (
                   <p className="text-xs text-hawker-red/80 text-center">Could not generate score card</p>
@@ -338,7 +398,7 @@ export default function GameOverModal({
                   <p className="text-xs text-kopi-brown/50 text-center">Generating card…</p>
                 )}
 
-                {/* Share button — themed to level */}
+                {/* Share button */}
                 <button
                   onClick={handleShare}
                   disabled={!cardReady}
@@ -349,15 +409,9 @@ export default function GameOverModal({
                   style={{ backgroundColor: cardReady ? theme.accent : undefined }}
                 >
                   <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+                    width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
                   >
                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                     <polyline points="16 6 12 2 8 6" />
