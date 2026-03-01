@@ -343,32 +343,31 @@ export default function Customer({
             {/* ── Body / Arms / Collar — gender-specific proportions ──── */}
             {isMale ? (
               <>
-                {/* Neck — visible on males, bridges head and wider shoulders */}
+                {/* Neck */}
                 <rect x="35" y="46" width="10" height="8" fill={skinTone} />
                 {/* Shirt — stops at waist */}
                 <path d="M16 54 Q16 47 24 44 L40 42 L56 44 Q64 47 64 54 L65 68 L15 68 Z" fill={shirtColor} />
-                {/* Trousers */}
-                <path d="M15 68 L65 68 L66 90 L14 90 Z" fill="#3D4255" />
-                {/* Belt */}
-                <rect x="15" y="66" width="50" height="3.5" rx="1" fill="#2A2E3E" opacity="0.85" />
+                {/* Jeans — denim blue reads immediately as trousers */}
+                <path d="M15 68 L65 68 L66 90 L14 90 Z" fill="#4A6FA5" />
+                {/* Seam line — clean 1px separator, no chunky belt */}
+                <line x1="15" y1="68" x2="65" y2="68" stroke="#2C3E5A" strokeWidth="1" opacity="0.4" />
                 {/* Arms */}
                 <path d="M16 56 L4 77 L11 79 L22 63" fill={skinTone} />
                 <path d="M64 56 L76 77 L69 79 L58 63" fill={skinTone} />
-                {/* Button-down collar */}
-                <path d="M33 44 L38 52 L40 47 L42 52 L47 44" stroke="white" strokeWidth="1.2" fill="none" opacity="0.6" />
-                {/* Button placket */}
-                <line x1="40" y1="47" x2="40" y2="66" stroke="white" strokeWidth="0.7" opacity="0.3" />
-                <circle cx="40" cy="52" r="1" fill="white" opacity="0.4" />
-                <circle cx="40" cy="57" r="1" fill="white" opacity="0.4" />
-                <circle cx="40" cy="62" r="1" fill="white" opacity="0.4" />
+                {/* Clean V-neck collar */}
+                <path d="M33 44 L40 50 L47 44" stroke="white" strokeWidth="1.2" fill="none" opacity="0.55" />
               </>
             ) : (
               <>
-                {/* Slimmer shoulders — original female silhouette */}
-                <path d="M22 50 Q22 46 28 44 L40 42 L52 44 Q58 46 58 50 L60 90 L20 90 Z" fill={shirtColor} />
+                {/* A-line dress — tapers to waist then flares to hem */}
+                <path d="M22 50 Q22 46 28 44 L40 42 L52 44 Q58 46 58 50 L54 66 L63 90 L17 90 L26 66 Z" fill={shirtColor} />
+                {/* Arms */}
                 <path d="M22 52 L10 72 L16 74 L26 58" fill={skinTone} />
                 <path d="M58 52 L70 72 L64 74 L54 58" fill={skinTone} />
-                <path d="M34 44 L40 48 L46 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
+                {/* Subtle waist accent */}
+                <path d="M26 66 L54 66" stroke="white" strokeWidth="0.8" opacity="0.3" />
+                {/* V-neck */}
+                <path d="M34 44 L40 49 L46 44" stroke="white" strokeWidth="1" fill="none" opacity="0.5" />
               </>
             )}
 
