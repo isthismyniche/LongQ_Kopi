@@ -99,10 +99,12 @@ export default function Leaderboard() {
               </button>
               {showNote && (
                 <p className="mt-2 text-xs text-kopi-brown/50 leading-relaxed px-2">
-                  Previously, every score submitted was recorded here individually.
-                  From March 2026, each player's personal best counts once —
-                  so the top 10 reflects 10 distinct players. Earlier scores remain
-                  and are each treated as a separate entry.
+                  Previously, every score submitted appeared here individually.
+                  From March 2026, scores are tracked by device — so each device's
+                  personal best counts once, and the top 10 reflects up to 10 distinct
+                  players. Scores from before this change are grandfathered in as
+                  separate entries. You may also spot the same name appearing more than
+                  once if someone played on multiple devices or cleared their browser data.
                 </p>
               )}
             </div>
