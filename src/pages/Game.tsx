@@ -197,7 +197,7 @@ export default function Game() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: [0.25, 0.55, 0.25] }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.3, repeat: 0 } }}
               transition={{ duration: 0.5, repeat: Infinity, ease: 'easeInOut' }}
               className="absolute inset-0 pointer-events-none z-10"
               style={{
