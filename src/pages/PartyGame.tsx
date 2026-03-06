@@ -1,58 +1,72 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageWrapper from '../components/ui/PageWrapper'
 import HUD from '../components/game/HUD'
 import CustomerQueue from '../components/game/CustomerQueue'
 import Counter from '../components/game/Counter'
-import OpponentTracker from '../components/game/OpponentTracker'
-import { useVersusGame } from '../hooks/useVersusGame'
-import { useVersusRoom } from '../hooks/useVersusRoom'
+import PartyProgressBars from '../components/game/PartyProgressBars'
+import { usePartyGame } from '../hooks/usePartyGame'
+import { usePartyRoom } from '../hooks/usePartyRoom'
 import { useSounds } from '../hooks/useSounds'
 import { loadSettings } from './Settings'
 import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
 import { trackEvent } from '../utils/analytics'
 
 interface LocationState {
-  role: 'host' | 'guest'
-  winTarget: number
-  startLevel: number
+  deviceId: string
+  playerName: string
 }
 
-export default function VersusGame() {
+export default function PartyGame() {
   const navigate = useNavigate()
   const location = useLocation()
   const { roomCode = '' } = useParams<{ roomCode: string }>()
   const state = location.state as LocationState | null
 
-  const role = state?.role ?? 'host'
-  const winTarget = state?.winTarget ?? 20
-  const startLevel = state?.startLevel ?? 1
+  const deviceId = state?.deviceId ?? ''
+  const playerName = state?.playerName ?? ''
 
-  const game = useVersusGame({ roomCode, role, winTarget, startLevel })
-  const { room, myDrinks, opponentDrinks, isWinner, isLoser, opponentDisconnectedAt } =
-    useVersusRoom(roomCode, role)
+  const { room, players, myPlayer, topOpponents, isWinner, isFinished } =
+    usePartyRoom(roomCode, deviceId)
+
+  const winTarget = room?.win_target ?? 20
+  const startLevel = room?.start_level ?? 1
+
+  const game = usePartyGame({ roomCode, deviceId, winTarget, startLevel })
 
   const sounds = useSounds()
   const [shortcuts, setShortcuts] = useState<ShortcutEntry[]>([])
   const prevResultRef = useRef(game.orderResult)
-  const prevRoomWinner = useRef<string | null>(null)
   const gameStarted = useRef(false)
+
+  // Guard: no state → redirect to lobby
+  if (!state || !deviceId) {
+    navigate('/party', { replace: true })
+    return null
+  }
 
   // Load shortcuts on mount
   useEffect(() => {
     setShortcuts(loadShortcuts())
-    trackEvent('versus_game_start')
+    trackEvent('party_game_start')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Start game once room loads (reads start_level from room — fixes start_level bug for guest)
+  // Start game once room data loads (reads start_level from room — fixes start_level bug)
   useEffect(() => {
     if (!room || gameStarted.current) return
     gameStarted.current = true
     const lvl = room.start_level ?? 1
     game.startGame(lvl > 1 ? lvl : undefined)
   }, [room?.start_level])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pause timer when finished
+  useEffect(() => {
+    if (isFinished && game.timer.isRunning) {
+      game.pauseTimer()
+    }
+  }, [isFinished, game.timer.isRunning, game.pauseTimer])
 
   // Sound effects on order result changes
   useEffect(() => {
@@ -62,23 +76,6 @@ export default function VersusGame() {
     }
     prevResultRef.current = game.orderResult
   }, [game.orderResult, sounds])
-
-  // Pause timer when winner is declared; restart game on rematch
-  useEffect(() => {
-    if (!room) return
-    const winner = room.winner
-
-    if (winner !== null && game.timer.isRunning) {
-      game.pauseTimer()
-    }
-
-    if (prevRoomWinner.current !== null && winner === null && room.status === 'playing') {
-      const lvl = room.start_level ?? 1
-      game.startGame(lvl > 1 ? lvl : undefined)
-    }
-    prevRoomWinner.current = winner
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room?.winner, room?.status])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -120,32 +117,20 @@ export default function VersusGame() {
   const withClick = <T extends unknown[]>(fn: (...args: T) => void) =>
     (...args: T) => { sounds.playClick(); fn(...args) }
 
-  const handleOpponentForfeited = useCallback(() => {
-    fetch('/api/versus/declare-winner', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ roomCode, role }),
-    }).catch(() => {})
-  }, [roomCode, role])
-
-  const handleChallengeAgain = useCallback(async () => {
+  const handleReturnToRoom = async () => {
     try {
-      await fetch('/api/versus/rematch', {
+      await fetch('/api/party/return-to-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomCode }),
+        body: JSON.stringify({ roomCode, deviceId, playerName }),
       })
-      // game.startGame() is triggered by the Realtime room update
     } catch {
-      // Ignore — the room Realtime subscription will handle the restart
+      // Non-critical — navigate anyway
     }
-  }, [roomCode])
-
-  // Guard: no state means they navigated here directly — redirect to lobby
-  if (!state) {
-    navigate('/versus', { replace: true })
-    return null
+    navigate('/party', { state: { rejoinCode: roomCode } })
   }
+
+  const myDrinks = myPlayer?.drinks ?? 0
 
   if (game.phase === 'idle') {
     return (
@@ -155,11 +140,12 @@ export default function VersusGame() {
     )
   }
 
-  const gameOver = room?.winner !== null && room?.status === 'finished'
+  // Sorted final standings for game over overlay
+  const standings = [...players].sort((a, b) => b.drinks - a.drinks)
 
   return (
     <PageWrapper className="flex flex-col h-full bg-gradient-to-b from-warm-yellow/30 to-cream overflow-hidden">
-      {/* HUD — no score in versus mode */}
+      {/* HUD */}
       <div className="flex-shrink-0 px-3 pt-2 md:px-6 md:pt-3">
         <HUD
           score={game.score}
@@ -173,14 +159,13 @@ export default function VersusGame() {
         />
       </div>
 
-      {/* Opponent progress */}
+      {/* Party progress bars */}
       <div className="flex-shrink-0">
-        <OpponentTracker
-          opponentDrinks={opponentDrinks}
+        <PartyProgressBars
+          myDrinks={myDrinks}
+          myName={playerName}
+          topOpponents={topOpponents}
           winTarget={winTarget}
-          opponentDisconnectedAt={opponentDisconnectedAt}
-          onOpponentForfeited={handleOpponentForfeited}
-          guestJoined={room?.guest_device_id != null}
         />
       </div>
 
@@ -219,7 +204,7 @@ export default function VersusGame() {
         </AnimatePresence>
       </div>
 
-      {/* Counter — shakes on error, no error panel */}
+      {/* Counter — shakes on error */}
       <div className="flex-shrink-0 relative">
         <motion.div
           animate={
@@ -256,7 +241,7 @@ export default function VersusGame() {
 
       {/* Game Over Overlay */}
       <AnimatePresence>
-        {gameOver && (
+        {isFinished && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -267,56 +252,61 @@ export default function VersusGame() {
               initial={{ scale: 0.85, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-cream rounded-3xl p-7 mx-4 max-w-xs w-full shadow-2xl text-center"
+              className="bg-cream rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl"
             >
-              {isWinner ? (
-                <>
-                  <div className="text-5xl mb-3">🏆</div>
-                  <h2 className="font-display text-3xl font-bold text-hawker-green mb-1">
-                    You Win!
-                  </h2>
-                  <p className="text-sm text-kopi-brown/60 font-body mb-6">
-                    You served {myDrinks} drinks first!
-                  </p>
-                  <p className="text-xs text-kopi-brown/40 font-body mb-4">
-                    Waiting for opponent to challenge again...
-                  </p>
-                  <button
-                    onClick={() => navigate('/')}
-                    className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
-                      text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
+              <div className="text-center mb-4">
+                {isWinner ? (
+                  <>
+                    <div className="text-5xl mb-2">🏆</div>
+                    <h2 className="font-display text-3xl font-bold text-hawker-green">You Win!</h2>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl mb-2">☕</div>
+                    <h2 className="font-display text-3xl font-bold text-kopi-brown">Game Over</h2>
+                  </>
+                )}
+              </div>
+
+              {/* Standings table */}
+              <div className="bg-white/60 rounded-2xl overflow-hidden mb-4">
+                <div className="grid grid-cols-[2rem_1fr_3rem] text-xs font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-3 py-2 border-b border-kopi-brown/10">
+                  <span>#</span>
+                  <span>Name</span>
+                  <span className="text-right">Drinks</span>
+                </div>
+                {standings.map((p, i) => (
+                  <div
+                    key={p.device_id}
+                    className={`grid grid-cols-[2rem_1fr_3rem] items-center px-3 py-2 text-sm font-body ${
+                      p.device_id === deviceId
+                        ? 'bg-warm-yellow/30 font-bold'
+                        : ''
+                    } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
                   >
-                    Back to Menu
-                  </button>
-                </>
-              ) : isLoser ? (
-                <>
-                  <div className="text-5xl mb-3">😔</div>
-                  <h2 className="font-display text-3xl font-bold text-hawker-red mb-1">
-                    You Lose
-                  </h2>
-                  <p className="text-sm text-kopi-brown/60 font-body mb-6">
-                    Opponent served {opponentDrinks} drinks. You had {myDrinks}.
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={handleChallengeAgain}
-                      className="w-full px-4 py-3 rounded-xl bg-hawker-red hover:bg-hawker-red/90
-                        text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
-                    >
-                      Challenge Again!
-                    </button>
-                    <button
-                      onClick={() => navigate('/')}
-                      className="w-full px-4 py-2 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
-                        text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
-                    >
-                      Back to Menu
-                    </button>
+                    <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
+                    <span className="text-kopi-brown truncate">
+                      {p.player_name}
+                      {p.disconnected_at && (
+                        <span className="text-xs text-kopi-brown/40 ml-1">(left)</span>
+                      )}
+                      {p.device_id === deviceId && (
+                        <span className="text-xs text-purple-500 ml-1">← you</span>
+                      )}
+                    </span>
+                    <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
                   </div>
-                </>
-              ) : (
-                // Fallback: game finished but role unclear (shouldn't happen)
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleReturnToRoom}
+                  className="w-full px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-600/90
+                    text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
+                >
+                  Return to Room
+                </button>
                 <button
                   onClick={() => navigate('/')}
                   className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
@@ -324,7 +314,7 @@ export default function VersusGame() {
                 >
                   Back to Menu
                 </button>
-              )}
+              </div>
             </motion.div>
           </motion.div>
         )}

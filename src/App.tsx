@@ -11,6 +11,8 @@ const Settings = lazy(() => import('./pages/Settings'))
 const ScorePage = lazy(() => import('./pages/ScorePage'))
 const VersusLobby = lazy(() => import('./pages/VersusLobby'))
 const VersusGame = lazy(() => import('./pages/VersusGame'))
+const PartyLobby = lazy(() => import('./pages/PartyLobby'))
+const PartyGame = lazy(() => import('./pages/PartyGame'))
 
 function LoadingFallback() {
   return (
@@ -34,6 +36,8 @@ function App() {
             <Route path="/score" element={<ScorePage />} />
             <Route path="/versus" element={<VersusLobby />} />
             <Route path="/versus/:roomCode" element={<VersusGame />} />
+            <Route path="/party" element={<PartyLobby />} />
+            <Route path="/party/:roomCode" element={<PartyGame />} />
           </Routes>
         </Suspense>
       </AnimatePresence>

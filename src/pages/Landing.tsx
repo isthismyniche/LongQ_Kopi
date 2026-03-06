@@ -7,6 +7,7 @@ import { trackEvent } from '../utils/analytics'
 const menuButtons = [
   { label: 'Start', path: '/game', color: 'bg-hawker-red hover:bg-hawker-red/90', track: 'start' },
   { label: 'Versus', path: '/versus', color: 'bg-amber-600 hover:bg-amber-600/90', track: 'versus' },
+  { label: 'Party', path: '/party', color: 'bg-purple-600 hover:bg-purple-600/90', track: 'party' },
   { label: 'How to Play', path: '/how-to-play', color: 'bg-kopi-brown hover:bg-kopi-brown/90', track: 'how_to_play' },
   { label: 'Leaderboard', path: '/leaderboard', color: 'bg-warm-yellow hover:bg-warm-yellow/90 text-kopi-brown', track: 'leaderboard' },
   { label: 'Settings', path: '/settings', color: 'bg-kopi-brown/70 hover:bg-kopi-brown/80', track: 'settings' },
