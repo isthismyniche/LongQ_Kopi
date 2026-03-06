@@ -9,8 +9,6 @@ const HowToPlay = lazy(() => import('./pages/HowToPlay'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
 const Settings = lazy(() => import('./pages/Settings'))
 const ScorePage = lazy(() => import('./pages/ScorePage'))
-const VersusLobby = lazy(() => import('./pages/VersusLobby'))
-const VersusGame = lazy(() => import('./pages/VersusGame'))
 const PartyLobby = lazy(() => import('./pages/PartyLobby'))
 const PartyGame = lazy(() => import('./pages/PartyGame'))
 
@@ -34,8 +32,6 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/score" element={<ScorePage />} />
-            <Route path="/versus" element={<VersusLobby />} />
-            <Route path="/versus/:roomCode" element={<VersusGame />} />
             <Route path="/party" element={<PartyLobby />} />
             <Route path="/party/:roomCode" element={<PartyGame />} />
           </Routes>
