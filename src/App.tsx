@@ -9,6 +9,8 @@ const HowToPlay = lazy(() => import('./pages/HowToPlay'))
 const Leaderboard = lazy(() => import('./pages/Leaderboard'))
 const Settings = lazy(() => import('./pages/Settings'))
 const ScorePage = lazy(() => import('./pages/ScorePage'))
+const VersusLobby = lazy(() => import('./pages/VersusLobby'))
+const VersusGame = lazy(() => import('./pages/VersusGame'))
 
 function LoadingFallback() {
   return (
@@ -30,6 +32,8 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/score" element={<ScorePage />} />
+            <Route path="/versus" element={<VersusLobby />} />
+            <Route path="/versus/:roomCode" element={<VersusGame />} />
           </Routes>
         </Suspense>
       </AnimatePresence>

@@ -67,7 +67,8 @@ function generateDifferentAppearance(avoid: CustomerAppearance): CustomerAppeara
   return { ...generateCustomerAppearance(), hairStyle: (avoid.hairStyle + 1 + Math.floor(Math.random() * 7)) % 8 }
 }
 
-export function useGameState() {
+export function useGameState(opts?: { versusMode?: boolean }) {
+  const versusModeRef = useRef(opts?.versusMode ?? false)
   const [score, setScore] = useState(0)
   const [lives, setLives] = useState(STARTING_LIVES)
   const [phase, setPhase] = useState<GamePhase>('idle')
@@ -125,7 +126,7 @@ export function useGameState() {
     const newLives = livesRef.current - 1
     setLives(newLives)
 
-    if (newLives <= 0) {
+    if (newLives <= 0 && !versusModeRef.current) {
       setTimeout(() => setPhase('gameover'), TRANSITION_DURATION_MS)
     } else {
       setPhase('transition')
@@ -332,7 +333,7 @@ export function useGameState() {
   }, [phase])
 
   const acknowledgeError = useCallback(() => {
-    if (livesRef.current <= 0) {
+    if (livesRef.current <= 0 && !versusModeRef.current) {
       setPhase('gameover')
     } else {
       // Advance immediately — error panel exits via its own AnimatePresence animation

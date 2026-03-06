@@ -10,9 +10,10 @@ interface HUDProps {
   level: LevelConfig
   cupNumber: number
   onQuit?: () => void
+  hideScore?: boolean
 }
 
-export default function HUD({ score, lives, secondsRemaining, isTimerRunning, lastPoints, level, cupNumber, onQuit }: HUDProps) {
+export default function HUD({ score, lives, secondsRemaining, isTimerRunning, lastPoints, level, cupNumber, onQuit, hideScore }: HUDProps) {
   // Show empty bar and no seconds when the timer isn't actively running (between orders,
   // error panel, level transition). This prevents the stale frozen-time display in L4-5
   // where the 350 ms gap would otherwise show the previous order's remaining time.
@@ -57,33 +58,35 @@ export default function HUD({ score, lives, secondsRemaining, isTimerRunning, la
       {/* Score and Lives */}
       <div className="flex items-center justify-between mt-2 px-1">
         {/* Score */}
-        <div className="relative flex items-center gap-2">
-          <span className="font-display text-sm font-bold text-kopi-brown/60">SCORE</span>
-          <motion.span
-            key={score}
-            initial={{ scale: 1.3, color: '#C41E3A' }}
-            animate={{ scale: 1, color: '#5C3D2E' }}
-            className="font-display text-2xl font-bold"
-          >
-            {score}
-          </motion.span>
+        {!hideScore && (
+          <div className="relative flex items-center gap-2">
+            <span className="font-display text-sm font-bold text-kopi-brown/60">SCORE</span>
+            <motion.span
+              key={score}
+              initial={{ scale: 1.3, color: '#C41E3A' }}
+              animate={{ scale: 1, color: '#5C3D2E' }}
+              className="font-display text-2xl font-bold"
+            >
+              {score}
+            </motion.span>
 
-          {/* Score popup */}
-          <AnimatePresence>
-            {lastPoints > 0 && (
-              <motion.span
-                key={`pts-${score}`}
-                initial={{ opacity: 1, y: 0, x: 0 }}
-                animate={{ opacity: 0, y: -36, x: 8 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.5, ease: 'easeOut' }}
-                className="absolute -top-1 left-16 font-display text-xl font-bold text-hawker-red pointer-events-none whitespace-nowrap"
-              >
-                +{lastPoints}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
+            {/* Score popup */}
+            <AnimatePresence>
+              {lastPoints > 0 && (
+                <motion.span
+                  key={`pts-${score}`}
+                  initial={{ opacity: 1, y: 0, x: 0 }}
+                  animate={{ opacity: 0, y: -36, x: 8 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1.5, ease: 'easeOut' }}
+                  className="absolute -top-1 left-16 font-display text-xl font-bold text-hawker-red pointer-events-none whitespace-nowrap"
+                >
+                  +{lastPoints}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Timer text */}
         <span className={`font-mono text-lg font-bold ${isUrgent ? 'text-hawker-red' : 'text-kopi-brown/60'}`}>
