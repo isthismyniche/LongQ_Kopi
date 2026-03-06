@@ -16,6 +16,7 @@ import { trackEvent } from '../utils/analytics'
 interface LocationState {
   role: 'host' | 'guest'
   winTarget: number
+  startLevel: number
 }
 
 export default function VersusGame() {
@@ -26,8 +27,9 @@ export default function VersusGame() {
 
   const role = state?.role ?? 'host'
   const winTarget = state?.winTarget ?? 20
+  const startLevel = state?.startLevel ?? 1
 
-  const game = useVersusGame({ roomCode, role, winTarget })
+  const game = useVersusGame({ roomCode, role, winTarget, startLevel })
   const { room, myDrinks, opponentDrinks, isWinner, isLoser, opponentDisconnectedAt } =
     useVersusRoom(roomCode, role)
 
@@ -39,7 +41,7 @@ export default function VersusGame() {
   // Load shortcuts and start game on mount
   useEffect(() => {
     setShortcuts(loadShortcuts())
-    game.startGame()
+    game.startGame(startLevel > 1 ? startLevel : undefined)
     trackEvent('versus_game_start')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -63,7 +65,7 @@ export default function VersusGame() {
     }
 
     if (prevRoomWinner.current !== null && winner === null && room.status === 'playing') {
-      game.startGame()
+      game.startGame(startLevel > 1 ? startLevel : undefined)
     }
     prevRoomWinner.current = winner
     // eslint-disable-next-line react-hooks/exhaustive-deps

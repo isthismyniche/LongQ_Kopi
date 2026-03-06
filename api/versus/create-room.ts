@@ -20,10 +20,16 @@ function generateCode(): string {
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') { res.status(405).end(); return }
 
-  const { deviceId } = req.body as { deviceId?: unknown }
+  const { deviceId, winTarget, startLevel } = req.body as {
+    deviceId?: unknown; winTarget?: unknown; startLevel?: unknown
+  }
   if (typeof deviceId !== 'string' || !deviceId) {
     res.status(400).json({ error: 'deviceId required' }); return
   }
+  const resolvedWinTarget = (typeof winTarget === 'number' && winTarget >= 5 && winTarget <= 50)
+    ? winTarget : 20
+  const resolvedStartLevel = (typeof startLevel === 'number' && startLevel >= 1 && startLevel <= 5)
+    ? startLevel : 1
 
   let supabase: ReturnType<typeof createClient>
   try { supabase = makeSupabase() } catch {
@@ -36,9 +42,11 @@ export default async function handler(req: any, res: any) {
     const { error } = await supabase.from('game_rooms').insert({
       room_code: roomCode,
       host_device_id: deviceId,
+      win_target: resolvedWinTarget,
+      start_level: resolvedStartLevel,
     })
     if (!error) {
-      res.json({ roomCode, role: 'host', winTarget: 20 }); return
+      res.json({ roomCode, role: 'host', winTarget: resolvedWinTarget, startLevel: resolvedStartLevel }); return
     }
     // Retry only on unique constraint violation (code collision)
     const isUnique = error.message?.includes('unique') || error.code === '23505'

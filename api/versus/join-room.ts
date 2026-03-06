@@ -43,5 +43,5 @@ export default async function handler(req: any, res: any) {
 
   if (updateError) { res.status(500).json({ error: updateError.message }); return }
 
-  res.json({ roomCode: code, role: 'guest', winTarget: room.win_target })
+  res.json({ roomCode: code, role: 'guest', winTarget: room.win_target, startLevel: room.start_level ?? 1 })
 }

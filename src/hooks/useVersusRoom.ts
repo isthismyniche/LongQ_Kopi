@@ -8,6 +8,7 @@ export interface GameRoom {
   host_drinks: number
   guest_drinks: number
   win_target: number
+  start_level: number
   winner: 'host' | 'guest' | null
   status: 'waiting' | 'playing' | 'finished'
   host_disconnected_at: string | null
