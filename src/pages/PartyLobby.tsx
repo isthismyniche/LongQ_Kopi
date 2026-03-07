@@ -34,15 +34,20 @@ function WaitingView({
   const [winTarget, setWinTarget] = useState(room?.win_target ?? 20)
   const [startLevel, setStartLevel] = useState(room?.start_level ?? 1)
   const settingsDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initializedRef = useRef(false)
   const isHost = room?.host_device_id === deviceId
 
-  // Sync local settings from room
+  // Initialise local settings from DB once — when room first loads.
+  // After that, local state is the host's source of truth and must not be
+  // overwritten by realtime echoes, which would cause the optimistic update
+  // to flicker back to the old value before settling.
   useEffect(() => {
-    if (room) {
+    if (room && !initializedRef.current) {
+      initializedRef.current = true
       setWinTarget(room.win_target)
       setStartLevel(room.start_level)
     }
-  }, [room?.win_target, room?.start_level])
+  }, [room])
 
   // Navigate to game when host starts — pass settings in state so
   // PartyGame can start the countdown immediately without waiting for a fetch.
