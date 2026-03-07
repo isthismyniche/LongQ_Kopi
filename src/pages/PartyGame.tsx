@@ -675,13 +675,13 @@ export default function PartyGame() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.85, opacity: 0 }}
               transition={{ type: 'spring', duration: 0.3 }}
-              className="bg-cream rounded-3xl p-5 mx-4 max-w-xs w-full shadow-2xl"
+              className="bg-cream rounded-3xl p-5 mx-4 max-w-xs w-full shadow-2xl flex flex-col max-h-[80vh]"
             >
-              <h3 className="font-display text-lg font-bold text-kopi-brown mb-0.5 text-center">Sabo who?</h3>
-              <p className="text-xs text-kopi-brown/50 font-body mb-4 text-center">
+              <h3 className="font-display text-lg font-bold text-kopi-brown mb-0.5 text-center flex-shrink-0">Sabo who?</h3>
+              <p className="text-xs text-kopi-brown/50 font-body mb-4 text-center flex-shrink-0">
                 {remainingSaboCharges} sabo{remainingSaboCharges !== 1 ? 's' : ''} remaining
               </p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0">
                 {activePlayers.filter(p => p.device_id !== deviceId).map(opp => {
                   const fullyBlocked = opp.blocked_ingredients.length >= ALL_INGREDIENTS.length
                   return (
@@ -701,7 +701,7 @@ export default function PartyGame() {
               </div>
               <button
                 onClick={() => setSaboModalOpen(false)}
-                className="w-full mt-3 text-sm text-kopi-brown/50 hover:text-kopi-brown/70 cursor-pointer font-body"
+                className="w-full mt-3 text-sm text-kopi-brown/50 hover:text-kopi-brown/70 cursor-pointer font-body flex-shrink-0"
               >
                 Cancel
               </button>
