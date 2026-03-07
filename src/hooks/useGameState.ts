@@ -114,13 +114,15 @@ export function useGameState(opts?: { versusMode?: boolean }) {
   const currentRegularRef = useRef<number | null>(null) // index into REGULARS for current customer
   const queueRef = useRef<CustomerAppearance[]>([])           // mirrors queueCustomers for synchronous reads
   const lastMainCustomerRef = useRef<CustomerAppearance | null>(null) // back-to-back appearance prevention
-  const totalTimeUsedRef = useRef(0) // total seconds spent on correctly served drinks
+  const totalTimeUsedRef = useRef(0) // total seconds consumed across all orders (correct, wrong, timeout)
   const wrongCycleRef = useRef(new ShuffleCycle(WRONG_REACTIONS))
   const correctCycleRef = useRef(new ShuffleCycle(CORRECT_REACTIONS))
   const quoteCycleRef = useRef(new ShuffleCycle(QUOTES))
   const [currentQuote, setCurrentQuote] = useState('')
 
   const handleTimeout = useCallback(() => {
+    // Full timer was consumed — count it toward total time
+    totalTimeUsedRef.current += levelRef.current.timerSeconds
     setOrderResult('timeout')
     // Use regular-specific reaction if applicable
     if (currentRegularRef.current !== null) {
@@ -422,6 +424,8 @@ export function useGameState(opts?: { versusMode?: boolean }) {
         }, quickTransition ? 350 : TRANSITION_DURATION_MS)
       }
     } else {
+      // Count time used on this wrong order toward total time
+      totalTimeUsedRef.current += levelRef.current.timerSeconds - timer.secondsRemaining
       setOrderResult('wrong')
       setMismatches(getOrderMismatches(cup, currentOrder))
       // Use regular-specific reaction if applicable
