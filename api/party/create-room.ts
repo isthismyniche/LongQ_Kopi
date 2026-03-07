@@ -8,8 +8,8 @@ function makeSupabase() {
   return createClient(url, key)
 }
 
-// No ambiguous characters (0/O, 1/I) for easier code sharing
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+// Letters only, no ambiguous I/O for easier verbal sharing
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 
 function generateCode(): string {
   return Array.from({ length: 6 }, () =>

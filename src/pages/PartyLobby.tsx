@@ -431,7 +431,7 @@ export default function PartyLobby() {
                 placeholder="ENTER CODE"
                 value={joinCode}
                 onChange={e => {
-                  setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                  setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))
                   setError('')
                 }}
                 className="w-full text-center font-mono text-3xl font-bold tracking-[0.25em]

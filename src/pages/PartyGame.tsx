@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import confetti from 'canvas-confetti'
 import { useNavigate, useLocation, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageWrapper from '../components/ui/PageWrapper'
@@ -142,6 +143,23 @@ export default function PartyGame() {
 
   const withClick = <T extends unknown[]>(fn: (...args: T) => void) =>
     (...args: T) => { sounds.playClick(); fn(...args) }
+
+  // Fire confetti burst for winner
+  const fireConfetti = useCallback(() => {
+    const burst = (angle: number, origin: { x: number; y: number }) =>
+      confetti({ particleCount: 80, spread: 70, angle, origin, colors: ['#C41E3A', '#F39C12', '#27AE60', '#9B59B6', '#3498DB'] })
+    burst(60, { x: 0, y: 0.6 })
+    burst(120, { x: 1, y: 0.6 })
+    setTimeout(() => { burst(80, { x: 0.2, y: 0.5 }); burst(100, { x: 0.8, y: 0.5 }) }, 300)
+  }, [])
+
+  // Trigger confetti when finished and we're the winner
+  useEffect(() => {
+    if (isFinished && isWinner) {
+      const t = setTimeout(fireConfetti, 400)
+      return () => clearTimeout(t)
+    }
+  }, [isFinished, isWinner, fireConfetti])
 
   const handleQuit = async () => {
     stop(500)
@@ -291,100 +309,145 @@ export default function PartyGame() {
 
       {/* Game Over Overlay */}
       <AnimatePresence>
-        {isFinished && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          >
+        {isFinished && (() => {
+          const myRank = standings.findIndex(p => p.device_id === deviceId) + 1
+          const totalPlayers = standings.length
+          const isPodium = myRank >= 2 && myRank <= 3 && totalPlayers > 5
+
+          // Per-rank header: emoji + title + subtitle
+          let emoji = '☕'
+          let title = 'Game Over'
+          let titleColor = 'text-kopi-brown'
+          let subtitle = ''
+          if (myRank === 1) {
+            emoji = '🏆'; title = 'You Win!'; titleColor = 'text-hawker-green'
+          } else if (isPodium) {
+            emoji = myRank === 2 ? '🥈' : '🥉'
+            title = "You're on the Podium!"
+            titleColor = 'text-amber-600'
+            subtitle = myRank === 2 ? 'Silver — so close!' : 'Bronze — well played!'
+          } else if (myRank <= 3) {
+            emoji = myRank === 2 ? '😤' : '😩'
+            title = myRank === 2 ? 'So Close!' : 'Not Quite'
+            titleColor = 'text-kopi-brown'
+          } else {
+            const sadEmojis = ['😔', '😤', '😭', '🫠', '😮‍💨']
+            emoji = sadEmojis[Math.min(myRank - 4, sadEmojis.length - 1)]
+            title = myRank >= totalPlayers ? 'Last Place...' : 'Keep Grinding!'
+            titleColor = 'text-kopi-brown/70'
+          }
+
+          return (
             <motion.div
-              initial={{ scale: 0.85, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-cream rounded-3xl p-5 w-full max-w-sm shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             >
-              <div className="text-center mb-4">
-                {isWinner ? (
-                  <>
-                    <div className="text-4xl mb-1">🏆</div>
-                    <h2 className="font-display text-2xl font-bold text-hawker-green">You Win!</h2>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-4xl mb-1">☕</div>
-                    <h2 className="font-display text-2xl font-bold text-kopi-brown">Game Over</h2>
-                  </>
-                )}
-              </div>
-
-              {/* Standings table */}
-              <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
-                {/* Header */}
-                <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
-                  <span>#</span>
-                  <span>Name</span>
-                  <span className="text-right">☕</span>
-                  <span className="text-right">−♥</span>
-                  <span className="text-right">Avg</span>
-                </div>
-                {standings.map((p, i) => {
-                  const isMe = p.device_id === deviceId
-                  const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
-                  const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
-                  const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
-
-                  return (
-                    <div
-                      key={p.device_id}
-                      className={`grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] items-center px-2 py-1.5 font-body ${
-                        isMe ? 'bg-warm-yellow/30 font-bold' : ''
-                      } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                transition={{ type: 'spring', duration: 0.5 }}
+                className="bg-cream rounded-3xl p-5 w-full max-w-sm shadow-2xl"
+              >
+                {/* Header with animated emoji */}
+                <div className="text-center mb-4">
+                  <motion.div
+                    className="text-4xl mb-1 inline-block"
+                    initial={{ scale: 0, rotate: -20 }}
+                    animate={
+                      myRank === 1
+                        ? { scale: [0, 1.4, 1], rotate: [-20, 10, 0] }
+                        : isPodium
+                        ? { scale: [0, 1.3, 1], rotate: [0, -8, 0] }
+                        : { scale: [0, 1.1, 1], rotate: [0, 5, -5, 0] }
+                    }
+                    transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
+                  >
+                    {emoji}
+                  </motion.div>
+                  <motion.h2
+                    className={`font-display text-2xl font-bold ${titleColor}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    {title}
+                  </motion.h2>
+                  {subtitle && (
+                    <motion.p
+                      className="text-sm text-kopi-brown/60 font-body mt-0.5"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.65 }}
                     >
-                      <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
-                      <span className="text-kopi-brown truncate">
-                        {p.player_name}
-                        {p.disconnected_at && <span className="text-kopi-brown/40 ml-1">(left)</span>}
-                      </span>
-                      <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
-                      <span className={`text-right font-display font-bold ${hasFewestDrops ? 'text-hawker-green' : 'text-kopi-brown/60'}`}>
-                        {p.lives_lost > 0 ? `−${p.lives_lost}` : '0'}
-                      </span>
-                      <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
-                        {avgSec}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Legend for highlights */}
-              {(servingPlayers.length > 1 || standings.length > 1) && (
-                <div className="flex gap-3 mb-3 text-[10px] font-body text-kopi-brown/50">
-                  {standings.length > 1 && <span><span className="text-hawker-green font-bold">Green −♥</span> = fewest dropped</span>}
-                  {servingPlayers.length > 1 && <span><span className="text-purple-600 font-bold">Purple avg</span> = fastest</span>}
+                      {subtitle}
+                    </motion.p>
+                  )}
                 </div>
-              )}
 
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleReturnToRoom}
-                  className="w-full px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-600/90
-                    text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
-                >
-                  Return to Room
-                </button>
-                <button
-                  onClick={() => { stop(500); navigate('/') }}
-                  className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
-                    text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
-                >
-                  Back to Menu
-                </button>
-              </div>
+                {/* Standings table */}
+                <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
+                  <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
+                    <span>#</span>
+                    <span>Name</span>
+                    <span className="text-right">☕</span>
+                    <span className="text-right">−♥</span>
+                    <span className="text-right">Avg</span>
+                  </div>
+                  {standings.map((p, i) => {
+                    const isMe = p.device_id === deviceId
+                    const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
+                    const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
+                    const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
+
+                    return (
+                      <motion.div
+                        key={p.device_id}
+                        className={`grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] items-center px-2 py-1.5 font-body ${
+                          isMe ? 'bg-warm-yellow/30 font-bold' : ''
+                        } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + i * 0.07 }}
+                      >
+                        <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
+                        <span className="text-kopi-brown truncate">
+                          {p.player_name}
+                          {p.disconnected_at && <span className="text-kopi-brown/40 ml-1">(left)</span>}
+                        </span>
+                        <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
+                        <span className={`text-right font-display font-bold ${hasFewestDrops ? 'text-hawker-green' : 'text-kopi-brown/60'}`}>
+                          {p.lives_lost > 0 ? `−${p.lives_lost}` : '0'}
+                        </span>
+                        <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
+                          {avgSec}
+                        </span>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={handleReturnToRoom}
+                    className="w-full px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-600/90
+                      text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
+                  >
+                    Return to Room
+                  </button>
+                  <button
+                    onClick={() => { stop(500); navigate('/') }}
+                    className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
+                      text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
+                  >
+                    Back to Menu
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          )
+        })()}
       </AnimatePresence>
     </PageWrapper>
   )

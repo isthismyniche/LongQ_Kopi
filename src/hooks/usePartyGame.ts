@@ -25,7 +25,10 @@ export function usePartyGame({ roomCode, deviceId, winTarget, startLevel }: UseP
     const drinksThisGame = game.cupNumber - startCupThreshold
     const startLivesCount = startLevel > 1 ? STARTING_LIVES + 1 : STARTING_LIVES
     const livesLost = Math.max(0, startLivesCount - game.lives)
-    const avgTimeMs = Math.round(game.avgTime * 1000)
+    // game.avgTime = totalTimeUsed / cupNumber (absolute). Recover totalTimeUsed then
+    // divide by drinksThisGame so starting at L3 doesn't skew the denominator.
+    const totalTimeMs = game.avgTime * game.cupNumber * 1000
+    const avgTimeMs = drinksThisGame > 0 ? Math.round(totalTimeMs / drinksThisGame) : 0
 
     supabase
       .from('room_players')
