@@ -27,7 +27,12 @@ function pickRandom<T>(arr: T[]): T {
 
 function generateOrder(poolType: PoolType): DrinkOrder {
   const pool = getDrinkPool(poolType)
-  return pickRandom(pool)
+  const drink = pickRandom(pool)
+  // Full pool (Levels 3–5): ~30% of orders are dabao
+  if (poolType === 'full' && Math.random() < 0.30) {
+    return { ...drink, dabao: true, displayName: drink.displayName + ' Dabao' }
+  }
+  return drink
 }
 
 export interface CustomerAppearance {

@@ -70,28 +70,50 @@ export default function HowToPlay() {
           </div>
 
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-display text-xl font-bold text-hawker-red mb-2">Scoring</h2>
-            <ul className="text-kopi-brown/80 space-y-1">
-              <li><strong>Correct order:</strong> 5 points + bonus for time remaining</li>
-              <li><strong>Wrong order or timeout:</strong> Lose 1 life</li>
-              <li><strong>Game over:</strong> When all lives are lost (start with 2)</li>
-            </ul>
+            <h2 className="font-display text-xl font-bold text-hawker-red mb-3">Scoring</h2>
+            <div className="space-y-2 text-kopi-brown/80">
+              <div className="flex justify-between items-baseline">
+                <span><strong>Correct order</strong></span>
+                <span className="text-sm text-kopi-brown/60">5 pts + time bonus</span>
+              </div>
+              <div className="flex justify-between items-baseline">
+                <span><strong>Wrong order / timeout</strong></span>
+                <span className="text-sm text-kopi-brown/60">−1 life</span>
+              </div>
+              <div className="flex justify-between items-baseline">
+                <span><strong>Game over</strong></span>
+                <span className="text-sm text-kopi-brown/60">when all lives are lost</span>
+              </div>
+              <p className="text-sm text-kopi-brown/60 pt-1 border-t border-kopi-brown/10">
+                Each level has a score multiplier — later levels are worth more points per drink, so it pays to push further.
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-display text-xl font-bold text-hawker-red mb-2">Regular Customers</h2>
-            <p className="text-kopi-brown/80 mb-2">
+            <h2 className="font-display text-xl font-bold text-hawker-red mb-3">Regular Customers</h2>
+            <p className="text-sm text-kopi-brown/80 mb-3">
               Some customers are <strong>regulars</strong> who visit your stall more than once.
-              You'll recognise them by their name badge and a floating <strong>"Remember me!"</strong> label.
+              Look out for their name badge.
             </p>
-            <ul className="text-kopi-brown/80 space-y-1">
-              <li><strong>First visit (Level 2):</strong> They order a drink normally. Remember what they ordered!</li>
-              <li><strong>Second visit (Levels 3–4):</strong> They'll say <strong>"The usual, please!"</strong> — you need to recall
-                their drink from memory. A <strong>"Remember me?"</strong> label will appear as a hint.</li>
-              <li>Serving their usual correctly earns a special reaction!</li>
-            </ul>
-            <p className="text-kopi-brown/60 text-sm mt-2">
-              Regulars: Mr Rajan, Makcik Siti, Uncle Lim
+            <div className="space-y-3">
+              <div className="flex gap-3 items-start">
+                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0">Lv 2</span>
+                <div>
+                  <p className="text-sm font-semibold text-kopi-brown">First visit</p>
+                  <p className="text-sm text-kopi-brown/70">They order normally — pay attention to what they ask for!</p>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0">Lv 3–4</span>
+                <div>
+                  <p className="text-sm font-semibold text-kopi-brown">Second visit — "The usual, please!"</p>
+                  <p className="text-sm text-kopi-brown/70">No order shown. Recall their drink from memory. A <strong>"Remember me?"</strong> hint will float above their head.</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-kopi-brown/40 mt-3">
+              Regulars: Mr Rajan · Makcik Siti · Uncle Lim
             </p>
           </div>
 

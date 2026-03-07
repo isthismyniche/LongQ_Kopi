@@ -76,5 +76,5 @@ export function getDrinkPool(poolType: PoolType): DrinkOrder[] {
       d => !EXCLUDED_MEDIUM.some(ex => d.displayName.includes(ex))
     )
   }
-  return [...ALL_DRINKS, ...expandWithDabao(ALL_DRINKS)]
+  return ALL_DRINKS
 }
