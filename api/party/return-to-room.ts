@@ -47,10 +47,10 @@ export default async function handler(req: any, res: any) {
   const isNewHost = updated && updated.length > 0
 
   if (isNewHost) {
-    // Reset all players: drinks to 0, is_host to false
+    // Reset all players: drinks + stats to 0, is_host to false
     await supabase
       .from('room_players')
-      .update({ drinks: 0, is_host: false })
+      .update({ drinks: 0, lives_lost: 0, avg_time_ms: 0, is_host: false })
       .eq('room_code', code)
 
     // Set own row as host
@@ -60,10 +60,10 @@ export default async function handler(req: any, res: any) {
       .eq('room_code', code)
       .eq('device_id', deviceId)
   } else {
-    // Subsequent callers: just reset their own row
+    // Subsequent callers: reset their own row's stats and reconnect
     await supabase
       .from('room_players')
-      .update({ drinks: 0, is_host: false, disconnected_at: null, player_name: name || undefined })
+      .update({ drinks: 0, lives_lost: 0, avg_time_ms: 0, is_host: false, disconnected_at: null, player_name: name || undefined })
       .eq('room_code', code)
       .eq('device_id', deviceId)
   }

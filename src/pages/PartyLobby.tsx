@@ -29,6 +29,7 @@ function WaitingView({
   const navigate = useNavigate()
   const { room, activePlayers } = usePartyRoom(roomCode, deviceId)
   const [copied, setCopied] = useState(false)
+  const [startError, setStartError] = useState('')
   const [winTarget, setWinTarget] = useState(room?.win_target ?? 20)
   const [startLevel, setStartLevel] = useState(room?.start_level ?? 1)
   const settingsDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -82,6 +83,7 @@ function WaitingView({
   }
 
   const handleStartGame = async () => {
+    setStartError('')
     try {
       const res = await fetch('/api/party/start-game', {
         method: 'POST',
@@ -90,10 +92,10 @@ function WaitingView({
       })
       if (!res.ok) {
         const data = await res.json() as { error?: string }
-        alert(data.error ?? 'Could not start game')
+        setStartError(data.error ?? 'Could not start game')
       }
     } catch {
-      alert('Could not start game — please try again.')
+      setStartError('Could not start game — please try again.')
     }
   }
 
@@ -197,6 +199,9 @@ function WaitingView({
           </div>
 
           {/* Start button */}
+          {startError && (
+            <p className="text-xs text-hawker-red font-body text-center">{startError}</p>
+          )}
           <button
             onClick={handleStartGame}
             disabled={activePlayers.length < 2}
