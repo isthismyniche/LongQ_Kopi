@@ -44,11 +44,12 @@ function WaitingView({
     }
   }, [room?.win_target, room?.start_level])
 
-  // Navigate to game when host starts
+  // Navigate to game when host starts — pass settings in state so
+  // PartyGame can start the countdown immediately without waiting for a fetch.
   useEffect(() => {
     if (room?.status === 'playing') {
       navigate(`/party/${roomCode}`, {
-        state: { deviceId, playerName },
+        state: { deviceId, playerName, winTarget: room.win_target, startLevel: room.start_level },
       })
     }
   }, [room?.status, roomCode, deviceId, playerName, navigate])

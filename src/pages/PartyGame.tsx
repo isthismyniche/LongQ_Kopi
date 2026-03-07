@@ -26,6 +26,8 @@ function ordinalSuffix(n: number): string {
 interface LocationState {
   deviceId: string
   playerName: string
+  winTarget?: number
+  startLevel?: number
 }
 
 export default function PartyGame() {
@@ -40,8 +42,10 @@ export default function PartyGame() {
   const { room, players, activePlayers, myPlayer, topOpponents, isWinner, isFinished } =
     usePartyRoom(roomCode, deviceId)
 
-  const winTarget = room?.win_target ?? 20
-  const startLevel = room?.start_level ?? 1
+  // Prefer values from location.state (available immediately on mount) so the
+  // countdown and win-check start without waiting for usePartyRoom's fetch.
+  const winTarget = state?.winTarget ?? room?.win_target ?? 20
+  const startLevel = state?.startLevel ?? room?.start_level ?? 1
 
   const game = usePartyGame({ roomCode, deviceId, winTarget, startLevel })
 
@@ -54,7 +58,8 @@ export default function PartyGame() {
   const prevLevelRef = useRef(game.level.level)
   const gameStarted = useRef(false)
   const [showQuitModal, setShowQuitModal] = useState(false)
-  const [countdown, setCountdown] = useState<number | null>(null)
+  // Start at 3 immediately so the first render shows "3", not "Loading..."
+  const [countdown, setCountdown] = useState<number | null>(3)
   const [showWinnerSplash, setShowWinnerSplash] = useState(false)
   const winnerSplashDoneRef = useRef(false)
   const wasFinishedRef = useRef(false)
@@ -73,12 +78,12 @@ export default function PartyGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Start game once room data loads — run a 3-2-1 countdown first, then start
+  // Start 3-2-1 countdown immediately on mount — no need to wait for usePartyRoom
+  // because startLevel is already in location.state.
   useEffect(() => {
-    if (!room || gameStarted.current) return
+    if (gameStarted.current) return
     gameStarted.current = true
-    const lvl = room.start_level ?? 1
-    setCountdown(3)
+    const lvl = startLevel
     const t1 = setTimeout(() => setCountdown(2), 1000)
     const t2 = setTimeout(() => setCountdown(1), 2000)
     const t3 = setTimeout(() => {
@@ -86,7 +91,7 @@ export default function PartyGame() {
       game.startGame(lvl > 1 ? lvl : undefined)
     }, 3000)
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
-  }, [room?.start_level])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pause timer when finished
   useEffect(() => {
@@ -249,32 +254,27 @@ export default function PartyGame() {
   if (game.phase === 'idle') {
     return (
       <PageWrapper className="flex items-center justify-center h-full bg-cream">
-        <AnimatePresence mode="wait">
-          {countdown !== null ? (
-            <motion.div
-              key={countdown}
-              initial={{ scale: 0.4, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 1.6, opacity: 0 }}
-              transition={{ duration: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
-              className="flex flex-col items-center gap-3"
-            >
-              <span className="font-display text-9xl font-bold text-purple-600 leading-none">
-                {countdown}
-              </span>
-              <span className="font-body text-lg text-kopi-brown/50">Get ready!</span>
-            </motion.div>
-          ) : (
-            <motion.p
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="font-display text-2xl text-kopi-brown/50"
-            >
-              Loading...
-            </motion.p>
-          )}
-        </AnimatePresence>
+        {/* Relative container so absolute children overlap — entry + exit run
+            simultaneously giving each number exactly 1 000 ms on screen. */}
+        <div className="relative flex items-center justify-center w-48 h-48">
+          <AnimatePresence>
+            {countdown !== null && (
+              <motion.div
+                key={countdown}
+                initial={{ scale: 0.4, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.6, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="absolute flex flex-col items-center gap-3"
+              >
+                <span className="font-display text-9xl font-bold text-purple-600 leading-none">
+                  {countdown}
+                </span>
+                <span className="font-body text-lg text-kopi-brown/50">Get ready!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </PageWrapper>
     )
   }
