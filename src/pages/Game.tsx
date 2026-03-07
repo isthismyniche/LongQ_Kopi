@@ -227,6 +227,8 @@ export default function Game() {
           onDiscard={withClick(game.discardCup)}
           onServe={game.serve}
           disabled={game.phase !== 'playing'}
+          isDabao={game.cup.isDabao}
+          onToggleDabao={withClick(game.toggleDabao)}
         />
         <AnimatePresence>
           {game.phase === 'errorAck' && game.mismatches.length > 0 && (

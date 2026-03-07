@@ -5,6 +5,156 @@ interface CupProps {
   contents: CupContents
 }
 
+export function PlasticBag({ contents }: CupProps) {
+  const { base, baseUnits, milk, hasIce, hasHotWater } = contents
+  const hasBase = base !== null && baseUnits > 0
+  const hasMilk = milk !== 'None'
+  const hasAnything = hasBase || hasMilk || hasHotWater
+
+  // Same layer math as Cup
+  const brim = 46
+  const bottom = 88
+  const capacity = bottom - brim
+
+  const milkH = hasMilk ? 8 : 0
+  const baseH = hasBase ? Math.min(baseUnits, 3) * 9 : 0
+  const iceH = hasIce ? 6 : 0
+  const usedByOthers = milkH + baseH + iceH
+  const waterH = hasHotWater ? Math.max(capacity - usedByOthers, 4) : 0
+
+  const milkTop = bottom - milkH
+  const waterTop = milkTop - waterH
+  const baseTop = waterTop - baseH
+  const iceTop = baseTop - iceH
+
+  const baseColor = base === 'Teh' ? '#B8860B' : '#5C3D2E'
+  const baseColorLight = base === 'Teh' ? '#D4A840' : '#8B6914'
+  const milkColor = milk === 'Condensed' ? '#F5DEB3' : '#FDF0D5'
+
+  return (
+    <div className="relative w-24 h-24 md:w-28 md:h-28 mx-auto">
+      <svg viewBox="0 0 110 105" className="w-full h-full">
+        <defs>
+          <clipPath id="bag-interior">
+            <path d="M 24,46 L 18,92 L 92,92 L 86,46 Z" />
+          </clipPath>
+        </defs>
+
+        {/* === Bag body === */}
+        <path
+          d="M 24,46 L 18,92 L 92,92 L 86,46 Z"
+          fill="rgba(240,232,218,0.65)"
+          stroke="#C9A96E"
+          strokeWidth="1"
+        />
+        {/* Left highlight */}
+        <path d="M 26,46 L 20,90 L 25,90 L 31,46 Z" fill="white" opacity="0.18" />
+        {/* Right shadow */}
+        <path d="M 84,46 L 90,90 L 85,90 L 79,46 Z" fill="#B8A890" opacity="0.08" />
+
+        {/* === Liquid contents (clipped to bag interior) === */}
+        <g clipPath="url(#bag-interior)">
+          {hasMilk && (
+            <motion.rect
+              x="16" width="78" rx="1"
+              initial={{ y: bottom, height: 0 }}
+              animate={{ y: milkTop, height: milkH }}
+              transition={{ duration: 0.3 }}
+              fill={milkColor}
+            />
+          )}
+          {hasHotWater && (
+            <motion.rect
+              x="16" width="78" rx="1"
+              initial={{ y: milkTop, height: 0 }}
+              animate={{ y: waterTop, height: waterH }}
+              transition={{ duration: 0.3 }}
+              fill={hasBase ? (base === 'Teh' ? '#C8963A' : '#7A5438') : '#D4ECFF'}
+              opacity={hasBase ? 0.45 : 0.5}
+            />
+          )}
+          {hasBase && (
+            <>
+              <motion.g
+                key={`base-${base}-${baseUnits}`}
+                initial={{ y: 5, opacity: 0.6 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
+                <rect x="16" width="78" y={baseTop} height={baseH} fill={baseColor} opacity="0.85" rx="1" />
+                <rect x="26" width="58" y={baseTop} height="1.5" fill={baseColorLight} opacity="0.4" rx="1" />
+              </motion.g>
+              <motion.ellipse
+                key={`ripple-${base}-${baseUnits}`}
+                cx="55"
+                cy={baseTop + 1}
+                rx="26"
+                ry="2.5"
+                fill={baseColorLight}
+                initial={{ scaleX: 0.3, opacity: 0.55 }}
+                animate={{ scaleX: 1, opacity: 0 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              />
+            </>
+          )}
+          {hasIce && (
+            <motion.g
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, type: 'spring' }}
+            >
+              <rect x="30" y={iceTop + 1} width="8" height="6" rx="1.5" fill="#E0F4FF" stroke="#B0D8F0" strokeWidth="0.5" opacity="0.8" />
+              <rect x="42" y={iceTop} width="8" height="6" rx="1.5" fill="#D0ECFF" stroke="#B0D8F0" strokeWidth="0.5" opacity="0.7" />
+              <rect x="54" y={iceTop + 2} width="7" height="5" rx="1.5" fill="#E8F6FF" stroke="#B0D8F0" strokeWidth="0.5" opacity="0.75" />
+            </motion.g>
+          )}
+        </g>
+
+        {/* === Bag gather / neck === */}
+        {/* Fold lines converging upward from body to rubber band */}
+        <path d="M 24,46 Q 34,38 44,33" stroke="#C9A96E" strokeWidth="0.8" fill="none" opacity="0.55" />
+        <path d="M 86,46 Q 76,38 66,33" stroke="#C9A96E" strokeWidth="0.8" fill="none" opacity="0.55" />
+        <path d="M 32,46 Q 40,39 47,34" stroke="#C9A96E" strokeWidth="0.5" fill="none" opacity="0.3" />
+        <path d="M 78,46 Q 70,39 63,34" stroke="#C9A96E" strokeWidth="0.5" fill="none" opacity="0.3" />
+
+        {/* Rubber band */}
+        <ellipse cx="55" cy="32" rx="13" ry="3.5"
+          fill="none" stroke="#E57373" strokeWidth="2.5" />
+
+        {/* Bag top above rubber band */}
+        <path d="M 44,32 Q 46,22 55,20 Q 64,22 66,32"
+          fill="rgba(240,232,218,0.55)" stroke="#C9A96E" strokeWidth="0.8" />
+
+        {/* Straw */}
+        <rect x="53" y="7" width="4" height="15" rx="2"
+          fill="#E8DCC8" stroke="#C9A96E" strokeWidth="0.6" />
+        <ellipse cx="55" cy="7" rx="2" ry="1" fill="#D4C4B0" />
+
+        {/* === Steam from straw top === */}
+        {hasAnything && !hasIce && (
+          <>
+            <motion.path
+              d="M 51 18 Q 48 12 51 8" stroke="#8B6914" strokeWidth="1.3" fill="none"
+              animate={{ y: [-1, -4, -1], opacity: [0.12, 0.32, 0.12] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <motion.path
+              d="M 59 18 Q 62 12 59 8" stroke="#8B6914" strokeWidth="1.3" fill="none"
+              animate={{ y: [-1, -4, -1], opacity: [0.12, 0.32, 0.12] }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
+            />
+          </>
+        )}
+
+        {/* Empty label */}
+        {!hasAnything && (
+          <text x="55" y="72" textAnchor="middle" fontSize="9" fill="#C8B8A0" opacity="0.5" fontFamily="sans-serif">empty</text>
+        )}
+      </svg>
+    </div>
+  )
+}
+
 export default function Cup({ contents }: CupProps) {
   const { base, baseUnits, milk, hasIce, hasHotWater } = contents
   const hasBase = base !== null && baseUnits > 0

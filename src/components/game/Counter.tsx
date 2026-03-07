@@ -3,7 +3,7 @@ import type { MilkType } from '../../data/drinkMatrix'
 import type { CupContents } from '../../utils/orderValidation'
 import { formatKeyDisplay, type ShortcutEntry } from '../../data/keyboardShortcuts'
 import type { SaboIngredient } from '../../utils/saboConfig'
-import Cup from './Cup'
+import Cup, { PlasticBag } from './Cup'
 
 interface CounterProps {
   cup: CupContents
@@ -22,6 +22,8 @@ interface CounterProps {
   onDiscard: () => void
   onServe: () => void
   disabled: boolean
+  isDabao: boolean
+  onToggleDabao: () => void
   blockedIngredients?: SaboIngredient[]
 }
 
@@ -291,6 +293,8 @@ export default function Counter({
   onDiscard,
   onServe,
   disabled,
+  isDabao,
+  onToggleDabao,
   blockedIngredients = [],
 }: CounterProps) {
   const blocked = blockedIngredients
@@ -356,7 +360,7 @@ export default function Counter({
             <BlockedOverlay isBlocked={blocked.includes('hotwater')} />
           </div>
 
-          <Cup contents={cup} />
+          {isDabao ? <PlasticBag contents={cup} /> : <Cup contents={cup} />}
 
           {/* Cup info badges — fixed height to prevent layout shift */}
           <div className="flex flex-wrap gap-1 justify-center min-h-[24px] items-start">
@@ -485,13 +489,26 @@ export default function Counter({
           SERVE
         </motion.button>
 
-        {/* Takeaway bag stack (cosmetic) */}
-        <div className="opacity-30" aria-label="Takeaway bags (decorative)">
-          <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-            <path d="M6 10 L6 26 L22 26 L22 10 Z" fill="#F5E6C8" stroke="#C9A96E" strokeWidth="1" />
+        {/* Dabao (takeaway) toggle */}
+        <motion.button
+          onClick={onToggleDabao}
+          disabled={disabled}
+          whileTap={disabled ? {} : { scale: 0.9 }}
+          aria-label={isDabao ? 'Switch to dine-in cup' : 'Switch to dabao bag'}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl
+            font-display font-bold text-xs shadow-md transition-all cursor-pointer
+            ${isDabao
+              ? 'bg-amber-100 ring-2 ring-kopi-brown text-kopi-brown'
+              : 'bg-white/15 text-white/50 hover:bg-white/25 hover:text-white/70'
+            }
+            ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+        >
+          <svg width="24" height="24" viewBox="0 0 28 28" aria-hidden="true">
+            <path d="M6 10 L6 26 L22 26 L22 10 Z" fill={isDabao ? '#C9A96E' : '#F5E6C8'} stroke="#C9A96E" strokeWidth="1" />
             <path d="M10 10 Q10 4 14 4 Q18 4 18 10" stroke="#C9A96E" strokeWidth="1.5" fill="none" />
           </svg>
-        </div>
+          <span>Dabao</span>
+        </motion.button>
       </div>
     </div>
   )

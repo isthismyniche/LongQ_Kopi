@@ -15,6 +15,7 @@ export interface BaseDrink {
 
 export interface DrinkOrder extends BaseDrink {
   peng: boolean
+  dabao: boolean
   displayName: string
 }
 
@@ -46,10 +47,14 @@ export const BASE_DRINKS: BaseDrink[] = [
 export function expandWithPeng(drinks: BaseDrink[]): DrinkOrder[] {
   const result: DrinkOrder[] = []
   for (const drink of drinks) {
-    result.push({ ...drink, peng: false, displayName: drink.name })
-    result.push({ ...drink, peng: true, displayName: `${drink.name} Peng` })
+    result.push({ ...drink, peng: false, dabao: false, displayName: drink.name })
+    result.push({ ...drink, peng: true, dabao: false, displayName: `${drink.name} Peng` })
   }
   return result
+}
+
+export function expandWithDabao(drinks: DrinkOrder[]): DrinkOrder[] {
+  return drinks.map(d => ({ ...d, dabao: true, displayName: d.displayName + ' Dabao' }))
 }
 
 export const ALL_DRINKS: DrinkOrder[] = expandWithPeng(BASE_DRINKS)
@@ -71,5 +76,5 @@ export function getDrinkPool(poolType: PoolType): DrinkOrder[] {
       d => !EXCLUDED_MEDIUM.some(ex => d.displayName.includes(ex))
     )
   }
-  return ALL_DRINKS
+  return [...ALL_DRINKS, ...expandWithDabao(ALL_DRINKS)]
 }

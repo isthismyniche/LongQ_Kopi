@@ -8,6 +8,7 @@ export interface CupContents {
   milkUnits: number
   hasIce: boolean
   hasHotWater: boolean
+  isDabao: boolean
 }
 
 export function createEmptyCup(): CupContents {
@@ -19,6 +20,7 @@ export function createEmptyCup(): CupContents {
     milkUnits: 1,
     hasIce: false,
     hasHotWater: false,
+    isDabao: false,
   }
 }
 
@@ -26,6 +28,7 @@ export function validateOrder(cup: CupContents, order: DrinkOrder): boolean {
   const sugarOk = order.sugarOptional === true || cup.sugar === order.sugar
   const milkUnitsOk = cup.milkUnits === (order.milkUnits ?? 1)
   return (
+    cup.isDabao === order.dabao &&
     cup.base === order.base &&
     cup.baseUnits === order.baseUnits &&
     sugarOk &&
@@ -43,6 +46,15 @@ export interface OrderMismatch {
 
 export function getOrderMismatches(cup: CupContents, order: DrinkOrder): OrderMismatch[] {
   const mismatches: OrderMismatch[] = []
+
+  // Container (cup vs bag)
+  if (cup.isDabao !== order.dabao) {
+    if (!cup.isDabao && order.dabao) {
+      mismatches.push({ label: 'Order is dabao — use the bag', type: 'missed' })
+    } else {
+      mismatches.push({ label: 'Order is dine-in — use the cup', type: 'wrong' })
+    }
+  }
 
   // Base type
   if (cup.base !== order.base) {

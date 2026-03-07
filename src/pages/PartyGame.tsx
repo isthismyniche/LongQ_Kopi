@@ -473,6 +473,8 @@ export default function PartyGame() {
             onDiscard={withClick(game.discardCup)}
             onServe={game.serve}
             disabled={game.phase !== 'playing'}
+            isDabao={game.cup.isDabao}
+            onToggleDabao={withClick(game.toggleDabao)}
             blockedIngredients={game.blockedIngredients}
           />
         </motion.div>

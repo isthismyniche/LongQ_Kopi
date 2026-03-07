@@ -324,9 +324,17 @@ export function useGameState(opts?: { versusMode?: boolean }) {
     setCup(prev => ({ ...prev, hasHotWater: true }))
   }, [phase])
 
+  const toggleDabao = useCallback(() => {
+    if (phase !== 'playing') return
+    setCup(prev => ({ ...createEmptyCup(), isDabao: !prev.isDabao }))
+    setLessToggle(false)
+    setSugarLessToggle(false)
+    setCondensedLessToggle(false)
+  }, [phase])
+
   const discardCup = useCallback(() => {
     if (phase !== 'playing') return
-    setCup(createEmptyCup())
+    setCup(prev => ({ ...createEmptyCup(), isDabao: prev.isDabao }))
     setLessToggle(false)
     setSugarLessToggle(false)
     setCondensedLessToggle(false)
@@ -485,6 +493,7 @@ export function useGameState(opts?: { versusMode?: boolean }) {
     toggleCondensedLess,
     addIce,
     addHotWater,
+    toggleDabao,
     discardCup,
     acknowledgeError,
     serve,

@@ -74,7 +74,7 @@ function shuffle<T>(arr: T[]): T[] {
 export function createRegularAssignments(poolType: PoolType): RegularDrinkAssignment[] {
   return REGULARS.map((_, i) => ({
     regularIndex: i,
-    drink: pickRandom(getDrinkPool(poolType)),
+    drink: pickRandom(getDrinkPool(poolType).filter(d => !d.dabao)),
     firstVisitDone: false,
     secondVisitDone: false,
   }))
