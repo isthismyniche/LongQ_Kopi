@@ -19,22 +19,54 @@ export default function HowToPlay() {
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <h2 className="font-display text-xl font-bold text-hawker-red mb-2">The Goal</h2>
             <p className="text-kopi-brown/80">
-              You're a hawker stall attendant. Customers queue up and order traditional
-              Singaporean kopi and teh drinks. Prepare each order correctly before time runs out!
+              Customers queue up and order traditional Singaporean kopi and teh drinks.
+              Prepare each order correctly before time runs out!
             </p>
           </div>
 
           <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-display text-xl font-bold text-hawker-red mb-2">How to Make a Drink</h2>
-            <ol className="list-decimal list-inside text-kopi-brown/80 space-y-1">
-              <li>Read the customer's order in the speech bubble</li>
-              <li>Add the correct <strong>base</strong> (Kopi or Teh) — click the dispenser. Use <strong>Less</strong> toggle for half-strength (Po) pours</li>
-              <li>Add <strong>milk</strong> if needed (Condensed or Evaporated)</li>
-              <li>Add <strong>sugar</strong> — click Sugar button. Use <strong>Less</strong> toggle beside it for half sugar (Siu Dai). No click = Kosong</li>
-              <li>Add <strong>hot water</strong> — required for all drinks except Di Lo</li>
-              <li>Add <strong>ice</strong> if the order says "Peng"</li>
-              <li>Hit <strong>Serve</strong> when ready!</li>
-            </ol>
+            <h2 className="font-display text-xl font-bold text-hawker-red mb-3">How to Make a Drink</h2>
+            <div className="space-y-3 text-kopi-brown/80">
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Base — Kopi or Teh</p>
+                <p className="text-sm">Add the base using the dispenser. A few strength variants:</p>
+                <ul className="text-sm mt-1 ml-3 space-y-0.5">
+                  <li><strong>Po</strong> — half strength (use the Less toggle)</li>
+                  <li><strong>Gau</strong> — double strength</li>
+                  <li><strong>Di Lo</strong> — pure concentrate, triple strength — no water needed!</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Milk</p>
+                <p className="text-sm">Condensed milk is the default. Two variants:</p>
+                <ul className="text-sm mt-1 ml-3 space-y-0.5">
+                  <li><strong>O</strong> — no milk</li>
+                  <li><strong>C</strong> — evaporated milk instead</li>
+                </ul>
+                <p className="text-sm mt-1">
+                  Regular Kopi/Teh with condensed milk is naturally sweet — no sugar needed.
+                  But for <strong>C</strong> drinks, add sugar. Unless it's <strong>Kosong</strong> — then skip sugar entirely.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Hot Water</p>
+                <p className="text-sm">Add hot water to all drinks — except <strong>Di Lo</strong>, which is pure concentrate and doesn't need diluting.</p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Peng — Iced</p>
+                <p className="text-sm">If the order says Peng, add ice.</p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Dabao — Takeaway <span className="text-kopi-brown/40 font-normal">(Levels 3+)</span></p>
+                <p className="text-sm">Some customers want takeaway. Switch to the bag container before making their drink.</p>
+              </div>
+
+            </div>
           </div>
 
           <div className="bg-white rounded-2xl p-4 shadow-sm">
@@ -63,65 +95,56 @@ export default function HowToPlay() {
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <h2 className="font-display text-xl font-bold text-hawker-red mb-2">Special Terms</h2>
-            <ul className="text-kopi-brown/80 space-y-1">
-              <li><strong>Po</strong> — lighter, half-strength base (0.5 units)</li>
-              <li><strong>Gau</strong> — extra strong (2 units of base)</li>
-              <li><strong>Di Lo</strong> — extra extra strong (3 units of base, no hot water needed)</li>
-              <li><strong>Siu Dai</strong> — less sweet. For condensed milk drinks, use the <strong>Less</strong> toggle on the condensed milk button (½ unit). For O or C drinks, use the <strong>Less</strong> toggle on sugar (half sugar).</li>
-              <li><strong>Kosong</strong> — no sugar</li>
-              <li><strong>O</strong> — no milk</li>
-              <li><strong>C</strong> — evaporated milk instead of condensed</li>
-              <li><strong>Peng</strong> — iced</li>
-            </ul>
-            <p className="text-kopi-brown/50 text-sm mt-2">
-              Note: kopi and teh with condensed milk are naturally sweet — sugar is optional and any amount is accepted.
-            </p>
-          </div>
         </div>
 
-        {/* Drink Reference Matrix */}
+        {/* Drink Reference Matrix — collapsed by default */}
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-display text-2xl font-bold text-kopi-brown mb-3 text-center">
-            Drink Reference
-          </h2>
-          <div className="overflow-x-auto rounded-2xl shadow-sm">
-            <table className="w-full bg-white text-sm">
-              <thead>
-                <tr className="bg-kopi-brown text-white">
-                  <th className="px-3 py-2 text-left font-display">Name</th>
-                  <th className="px-3 py-2 text-left font-display">Base</th>
-                  <th className="px-3 py-2 text-center font-display">Units</th>
-                  <th className="px-3 py-2 text-left font-display">Sugar</th>
-                  <th className="px-3 py-2 text-left font-display">Milk</th>
-                  <th className="px-3 py-2 text-center font-display">Hot Water</th>
-                </tr>
-              </thead>
-              <tbody>
-                {BASE_DRINKS.map((drink, i) => (
-                  <tr
-                    key={drink.name}
-                    className={i % 2 === 0 ? 'bg-cream/50' : 'bg-white'}
-                  >
-                    <td className="px-3 py-2 font-semibold text-kopi-brown">{drink.name}</td>
-                    <td className="px-3 py-2 text-kopi-brown/70">{drink.base}</td>
-                    <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.baseUnits}</td>
-                    <td className="px-3 py-2 text-kopi-brown/70">
-                      {drink.sugarOptional ? <span className="text-kopi-brown/40 italic">Optional</span> : drink.sugar}
-                    </td>
-                    <td className="px-3 py-2 text-kopi-brown/70">
-                      {drink.milk === 'Condensed' && drink.milkUnits === 0.5 ? 'Condensed (½)' : drink.milk}
-                    </td>
-                    <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.hotWater ? 'Yes' : 'No'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-center text-sm text-kopi-brown/50 mt-2">
-            Any drink can be ordered as "Peng" (iced). Add ice to the cup!
-          </p>
+          <details className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+            <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none
+              font-display font-bold text-kopi-brown/70 hover:text-kopi-brown transition-colors list-none">
+              <span>Drink Reference Table</span>
+              <span className="text-xs font-normal font-sans text-kopi-brown/40 group-open:hidden">show</span>
+              <span className="text-xs font-normal font-sans text-kopi-brown/40 hidden group-open:inline">hide</span>
+            </summary>
+            <div className="border-t border-kopi-brown/10">
+              <div className="overflow-x-auto">
+                <table className="w-full bg-white text-sm">
+                  <thead>
+                    <tr className="bg-kopi-brown text-white">
+                      <th className="px-3 py-2 text-left font-display">Name</th>
+                      <th className="px-3 py-2 text-left font-display">Base</th>
+                      <th className="px-3 py-2 text-center font-display">Units</th>
+                      <th className="px-3 py-2 text-left font-display">Sugar</th>
+                      <th className="px-3 py-2 text-left font-display">Milk</th>
+                      <th className="px-3 py-2 text-center font-display">Hot Water</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {BASE_DRINKS.map((drink, i) => (
+                      <tr
+                        key={drink.name}
+                        className={i % 2 === 0 ? 'bg-cream/50' : 'bg-white'}
+                      >
+                        <td className="px-3 py-2 font-semibold text-kopi-brown">{drink.name}</td>
+                        <td className="px-3 py-2 text-kopi-brown/70">{drink.base}</td>
+                        <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.baseUnits}</td>
+                        <td className="px-3 py-2 text-kopi-brown/70">
+                          {drink.sugarOptional ? <span className="text-kopi-brown/40 italic">Optional</span> : drink.sugar}
+                        </td>
+                        <td className="px-3 py-2 text-kopi-brown/70">
+                          {drink.milk === 'Condensed' && drink.milkUnits === 0.5 ? 'Condensed (½)' : drink.milk}
+                        </td>
+                        <td className="px-3 py-2 text-center text-kopi-brown/70">{drink.hotWater ? 'Yes' : 'No'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-center text-sm text-kopi-brown/50 px-4 py-2">
+                Any drink can be ordered as "Peng" (iced) or "Dabao" (takeaway).
+              </p>
+            </div>
+          </details>
         </div>
 
         {/* Changelog */}
