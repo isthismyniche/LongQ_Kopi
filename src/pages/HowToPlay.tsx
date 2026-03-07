@@ -62,7 +62,7 @@ export default function HowToPlay() {
               </div>
 
               <div>
-                <p className="font-semibold text-kopi-brown mb-0.5">Dabao — Takeaway <span className="text-kopi-brown/40 font-normal">(Levels 3+)</span></p>
+                <p className="font-semibold text-kopi-brown mb-0.5">Dabao — Takeaway</p>
                 <p className="text-sm">Some customers want takeaway. Switch to the bag container before making their drink.</p>
               </div>
 
@@ -98,14 +98,14 @@ export default function HowToPlay() {
             </p>
             <div className="space-y-3">
               <div className="flex gap-3 items-start">
-                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0">Lv 2</span>
+                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0 w-14 text-center">Lv 2</span>
                 <div>
                   <p className="text-sm font-semibold text-kopi-brown">First visit</p>
                   <p className="text-sm text-kopi-brown/70">They order normally — pay attention to what they ask for!</p>
                 </div>
               </div>
               <div className="flex gap-3 items-start">
-                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0">Lv 3–4</span>
+                <span className="mt-0.5 text-xs font-display font-bold text-white bg-kopi-brown/60 rounded-full px-2 py-0.5 flex-shrink-0 w-14 text-center">Lv 3–4</span>
                 <div>
                   <p className="text-sm font-semibold text-kopi-brown">Second visit — "The usual, please!"</p>
                   <p className="text-sm text-kopi-brown/70">No order shown. Recall their drink from memory. A <strong>"Remember me?"</strong> hint will float above their head.</p>
