@@ -401,7 +401,7 @@ export default function PartyGame() {
                 font-display font-bold text-xs cursor-pointer transition-colors
                 disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              🧯 {remainingSaboCharges}
+              SABO 🧯 {remainingSaboCharges}
             </button>
           )}
         </div>
