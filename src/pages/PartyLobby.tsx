@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import PageWrapper from '../components/ui/PageWrapper'
 import BackButton from '../components/ui/BackButton'
@@ -7,7 +7,7 @@ import { usePartyRoom } from '../hooks/usePartyRoom'
 import { getOrCreateDeviceId } from '../utils/leaderboard'
 import { trackEvent } from '../utils/analytics'
 
-type LobbyView = 'choose' | 'create' | 'join' | 'waiting'
+type LobbyView = 'choose' | 'create' | 'join' | 'waiting' | 'rejoin'
 
 const WIN_TARGET_MIN = 5
 const WIN_TARGET_MAX = 50
@@ -29,6 +29,7 @@ function WaitingView({
   const navigate = useNavigate()
   const { room, activePlayers } = usePartyRoom(roomCode, deviceId)
   const [copied, setCopied] = useState(false)
+  const [sharedLink, setSharedLink] = useState(false)
   const [startError, setStartError] = useState('')
   const [winTarget, setWinTarget] = useState(room?.win_target ?? 20)
   const [startLevel, setStartLevel] = useState(room?.start_level ?? 1)
@@ -57,6 +58,19 @@ function WaitingView({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
+  }, [roomCode])
+
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/party?join=${roomCode}`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Join my LongQ Kopi room!', text: `Join with code ${roomCode}`, url })
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url)
+      setSharedLink(true)
+      setTimeout(() => setSharedLink(false), 2000)
+    }
   }, [roomCode])
 
   const postSettings = useCallback((wt: number, sl: number) => {
@@ -102,10 +116,11 @@ function WaitingView({
   return (
     <div className="flex flex-col items-center gap-5 w-full max-w-xs">
       {/* Room code */}
-      <div className="text-center">
+      <div className="text-center w-full">
         <p className="text-sm text-kopi-brown/60 font-body mb-3">Share this code:</p>
         <div className="flex items-center gap-3 bg-white rounded-2xl px-6 py-4 shadow-sm border border-kopi-brown/15">
-          <span className="font-mono text-4xl font-bold text-kopi-brown tracking-[0.2em]">{roomCode}</span>
+          <span className="font-mono text-4xl font-bold text-kopi-brown tracking-[0.2em] flex-1">{roomCode}</span>
+          {/* Copy code */}
           <button
             onClick={handleCopy}
             className="text-kopi-brown/40 hover:text-kopi-brown transition-colors cursor-pointer"
@@ -122,7 +137,27 @@ function WaitingView({
               </svg>
             )}
           </button>
+          {/* Share link */}
+          <button
+            onClick={handleShare}
+            className="text-kopi-brown/40 hover:text-kopi-brown transition-colors cursor-pointer"
+            aria-label="Share invite link"
+          >
+            {sharedLink ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            )}
+          </button>
         </div>
+        {sharedLink && (
+          <p className="text-xs text-kopi-brown/50 font-body mt-1.5">Link copied!</p>
+        )}
       </div>
 
       {/* Player list */}
@@ -219,7 +254,32 @@ function WaitingView({
         </div>
       )}
 
-      {!isHost && (
+      {!isHost && room && (
+        <div className="w-full flex flex-col items-center gap-3">
+          {/* Read-only game settings so guests know what they're about to play */}
+          <div className="w-full bg-white/60 rounded-2xl px-4 py-3 border border-kopi-brown/10 text-center">
+            <p className="text-xs font-display font-bold text-kopi-brown/50 uppercase tracking-wide mb-1">
+              Game settings
+            </p>
+            <p className="text-sm font-body text-kopi-brown">
+              First to{' '}
+              <span className="font-bold">{room.win_target} drinks</span>
+              {' · '}Starting at{' '}
+              <span className="font-bold">Level {room.start_level}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-kopi-brown/50">
+            <motion.div
+              className="w-2 h-2 rounded-full bg-kopi-brown/40"
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+            />
+            <span className="text-sm font-body">Waiting for host to start...</span>
+          </div>
+        </div>
+      )}
+
+      {!isHost && !room && (
         <div className="flex items-center gap-2 text-kopi-brown/50">
           <motion.div
             className="w-2 h-2 rounded-full bg-kopi-brown/40"
@@ -245,6 +305,7 @@ function WaitingView({
 export default function PartyLobby() {
   const location = useLocation()
   const locationState = location.state as { rejoinCode?: string } | null
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [view, setView] = useState<LobbyView>('choose')
   const [roomCode, setRoomCode] = useState('')
@@ -257,12 +318,21 @@ export default function PartyLobby() {
 
   const deviceId = getOrCreateDeviceId()
 
-  // Handle rejoin (return-to-room flow)
+  // Handle ?join=XXXXXX URL param (shareable invite link)
+  useEffect(() => {
+    const joinParam = searchParams.get('join')
+    if (!joinParam) return
+    setJoinCode(joinParam.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6))
+    setSearchParams({}, { replace: true })
+    setView('join')
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle rejoin (return-to-room flow) — show contextual rejoin view
   useEffect(() => {
     const rejoin = locationState?.rejoinCode
     if (!rejoin) return
     setJoinCode(rejoin)
-    setView('join')
+    setView('rejoin')
   }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = useCallback(async () => {
@@ -417,6 +487,39 @@ export default function PartyLobby() {
                 playerName={playerName}
                 onBack={() => { setView('choose'); setRoomCode('') }}
               />
+            </motion.div>
+          )}
+
+          {/* ── Rejoin (return-to-room context) ── */}
+          {view === 'rejoin' && (
+            <motion.div
+              key="rejoin"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="flex flex-col items-center gap-5 w-full max-w-xs"
+            >
+              <div className="text-center">
+                <p className="text-sm text-kopi-brown/60 font-body mb-1">Returning to room</p>
+                <span className="font-mono text-3xl font-bold text-kopi-brown tracking-[0.2em]">{joinCode}</span>
+              </div>
+              {nameInput}
+              {error && <p className="text-xs text-hawker-red font-body text-center">{error}</p>}
+              <button
+                onClick={handleJoin}
+                disabled={loading}
+                className="w-full px-6 py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-600/90
+                  text-white font-display font-bold text-lg shadow-lg cursor-pointer transition-colors
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Rejoining...' : 'Rejoin Room'}
+              </button>
+              <button
+                onClick={() => { setView('choose'); setJoinCode(''); setError('') }}
+                className="text-sm text-kopi-brown/50 hover:text-kopi-brown/70 transition-colors cursor-pointer font-body"
+              >
+                Back to menu
+              </button>
             </motion.div>
           )}
 

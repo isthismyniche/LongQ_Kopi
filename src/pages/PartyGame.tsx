@@ -16,6 +16,13 @@ import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
 import { trackEvent } from '../utils/analytics'
 import { STARTING_LIVES } from '../data/gameConfig'
 
+function ordinalSuffix(n: number): string {
+  if (n % 100 >= 11 && n % 100 <= 13) return 'th'
+  switch (n % 10) {
+    case 1: return 'st'; case 2: return 'nd'; case 3: return 'rd'; default: return 'th'
+  }
+}
+
 interface LocationState {
   deviceId: string
   playerName: string
@@ -30,7 +37,7 @@ export default function PartyGame() {
   const deviceId = state?.deviceId ?? ''
   const playerName = state?.playerName ?? ''
 
-  const { room, players, myPlayer, topOpponents, isWinner, isFinished } =
+  const { room, players, activePlayers, myPlayer, topOpponents, isWinner, isFinished } =
     usePartyRoom(roomCode, deviceId)
 
   const winTarget = room?.win_target ?? 20
@@ -46,6 +53,10 @@ export default function PartyGame() {
   const prevPhaseRef = useRef(game.phase)
   const prevLevelRef = useRef(game.level.level)
   const gameStarted = useRef(false)
+  const [showQuitModal, setShowQuitModal] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const [showWinnerSplash, setShowWinnerSplash] = useState(false)
+  const winnerSplashDoneRef = useRef(false)
 
   // Guard: no state → redirect to lobby (must be in useEffect — calling navigate during
   // render causes React to warn about updating a component while rendering a different one)
@@ -61,12 +72,19 @@ export default function PartyGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Start game once room data loads (reads start_level from room — fixes start_level bug)
+  // Start game once room data loads — run a 3-2-1 countdown first, then start
   useEffect(() => {
     if (!room || gameStarted.current) return
     gameStarted.current = true
     const lvl = room.start_level ?? 1
-    game.startGame(lvl > 1 ? lvl : undefined)
+    setCountdown(3)
+    const t1 = setTimeout(() => setCountdown(2), 1000)
+    const t2 = setTimeout(() => setCountdown(1), 2000)
+    const t3 = setTimeout(() => {
+      setCountdown(null)
+      game.startGame(lvl > 1 ? lvl : undefined)
+    }, 3000)
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
   }, [room?.start_level])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pause timer when finished
@@ -162,7 +180,28 @@ export default function PartyGame() {
     }
   }, [isFinished, isWinner, fireConfetti])
 
-  const handleQuit = async () => {
+  // Winner splash: show for 1.8 s then reveal full standings
+  useEffect(() => {
+    if (!isFinished || winnerSplashDoneRef.current) return
+    winnerSplashDoneRef.current = true
+    setShowWinnerSplash(true)
+    const t = setTimeout(() => setShowWinnerSplash(false), 1800)
+    return () => clearTimeout(t)
+  }, [isFinished])
+
+  const handleQuitOpen = useCallback(() => {
+    if (isFinished) return
+    game.pauseTimer()
+    setShowQuitModal(true)
+  }, [game, isFinished])
+
+  const handleQuitCancel = useCallback(() => {
+    setShowQuitModal(false)
+    game.resumeTimer()
+  }, [game])
+
+  const handleQuitConfirm = useCallback(async () => {
+    setShowQuitModal(false)
     stop(500)
     try {
       await fetch('/api/party/disconnect', {
@@ -172,7 +211,7 @@ export default function PartyGame() {
       })
     } catch { /* non-critical */ }
     navigate('/')
-  }
+  }, [stop, roomCode, deviceId, navigate])
 
   const handleReturnToRoom = async () => {
     stop(500)
@@ -190,10 +229,39 @@ export default function PartyGame() {
   const livesLost = Math.max(0, startLivesCount - game.lives)
   const myDrinks = myPlayer?.drinks ?? 0
 
+  const sortedByDrinks = [...activePlayers].sort((a, b) => b.drinks - a.drinks)
+  const myCurrentRank = sortedByDrinks.findIndex(p => p.device_id === deviceId) + 1
+  const winnerName = players.find(p => p.device_id === room?.winner)?.player_name ?? 'Someone'
+
   if (game.phase === 'idle') {
     return (
       <PageWrapper className="flex items-center justify-center h-full bg-cream">
-        <p className="font-display text-2xl text-kopi-brown/50">Loading...</p>
+        <AnimatePresence mode="wait">
+          {countdown !== null ? (
+            <motion.div
+              key={countdown}
+              initial={{ scale: 0.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.6, opacity: 0 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <span className="font-display text-9xl font-bold text-purple-600 leading-none">
+                {countdown}
+              </span>
+              <span className="font-body text-lg text-kopi-brown/50">Get ready!</span>
+            </motion.div>
+          ) : (
+            <motion.p
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="font-display text-2xl text-kopi-brown/50"
+            >
+              Loading...
+            </motion.p>
+          )}
+        </AnimatePresence>
       </PageWrapper>
     )
   }
@@ -253,11 +321,11 @@ export default function PartyGame() {
           cupNumber={game.cupNumber}
           hideScore
           livesLost={livesLost}
-          onQuit={handleQuit}
+          onQuit={handleQuitOpen}
         />
       </div>
 
-      {/* Party progress bars */}
+      {/* Party progress bars + live rank */}
       <div className="flex-shrink-0">
         <PartyProgressBars
           myDrinks={myDrinks}
@@ -265,6 +333,15 @@ export default function PartyGame() {
           topOpponents={topOpponents}
           winTarget={winTarget}
         />
+        {activePlayers.length > 1 && myCurrentRank > 0 && (
+          <p className="text-center text-[11px] text-kopi-brown/40 font-body pb-0.5">
+            You're{' '}
+            <span className="font-bold text-kopi-brown/60">
+              {myCurrentRank}{ordinalSuffix(myCurrentRank)}
+            </span>
+            {' '}of {activePlayers.length}
+          </p>
+        )}
       </div>
 
       {/* Customer area */}
@@ -337,10 +414,7 @@ export default function PartyGame() {
         </motion.div>
       </div>
 
-      {/* Game Over Overlay — key="game-over-overlay" is required so AnimatePresence can
-          track this element across re-renders (Realtime drink updates). Without a stable
-          key it treats each re-render as a new entering element, causing two overlapping
-          overlays to be mounted simultaneously (the double-trophy bug). */}
+      {/* Game Over Overlay */}
       <AnimatePresence>
         {isFinished && (
           <motion.div
@@ -350,104 +424,189 @@ export default function PartyGame() {
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           >
-            <motion.div
-              initial={{ scale: 0.85, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-cream rounded-3xl p-5 w-full max-w-sm shadow-2xl"
-            >
-              {/* Header with animated emoji */}
-              <div className="text-center mb-4">
+            <AnimatePresence mode="wait">
+              {/* Winner splash — shown for 1.8 s before the full results card */}
+              {showWinnerSplash ? (
                 <motion.div
-                  className="text-4xl mb-1 inline-block"
-                  initial={{ scale: 0, rotate: -20 }}
-                  animate={
-                    myRank === 1
-                      ? { scale: [0, 1.4, 1], rotate: [-20, 10, 0] }
-                      : isPodium
-                      ? { scale: [0, 1.3, 1], rotate: [0, -8, 0] }
-                      : { scale: [0, 1.1, 1], rotate: [0, 5, -5, 0] }
-                  }
-                  transition={{ delay: 0.3, duration: 0.6, type: 'spring' }}
+                  key="winner-splash"
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 1.1, opacity: 0 }}
+                  transition={{ type: 'spring', duration: 0.5 }}
+                  className="flex flex-col items-center gap-4 text-center"
                 >
-                  {gameOverEmoji}
-                </motion.div>
-                <motion.h2
-                  className={`font-display text-2xl font-bold ${gameOverTitleColor}`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  {gameOverTitle}
-                </motion.h2>
-                {gameOverSubtitle && (
-                  <motion.p
-                    className="text-sm text-kopi-brown/60 font-body mt-0.5"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.65 }}
+                  <motion.div
+                    className="text-7xl"
+                    animate={{ rotate: [0, -15, 15, -10, 10, 0] }}
+                    transition={{ delay: 0.3, duration: 0.7 }}
                   >
-                    {gameOverSubtitle}
-                  </motion.p>
-                )}
-              </div>
-
-              {/* Standings table */}
-              <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
-                <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
-                  <span>#</span>
-                  <span>Name</span>
-                  <span className="text-right">☕</span>
-                  <span className="text-right">−♥</span>
-                  <span className="text-right">Avg</span>
-                </div>
-                {standings.map((p, i) => {
-                  const isMe = p.device_id === deviceId
-                  const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
-                  const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
-                  const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
-
-                  return (
-                    <motion.div
-                      key={p.device_id}
-                      className={`grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] items-center px-2 py-1.5 font-body ${
-                        isMe ? 'bg-warm-yellow/30 font-bold' : ''
-                      } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + i * 0.07 }}
+                    🏆
+                  </motion.div>
+                  <div>
+                    <motion.p
+                      className="font-display text-4xl font-bold text-white drop-shadow-lg"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25 }}
                     >
-                      <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
-                      <span className="text-kopi-brown truncate">
-                        {p.player_name}
-                        {p.disconnected_at && <span className="text-kopi-brown/40 ml-1">(left)</span>}
-                      </span>
-                      <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
-                      <span className={`text-right font-display font-bold ${hasFewestDrops ? 'text-hawker-green' : 'text-kopi-brown/60'}`}>
-                        {p.lives_lost > 0 ? `−${p.lives_lost}` : '0'}
-                      </span>
-                      <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
-                        {avgSec}
-                      </span>
-                    </motion.div>
-                  )
-                })}
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleReturnToRoom}
-                  className="w-full px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-600/90
-                    text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
+                      {winnerName}
+                    </motion.p>
+                    <motion.p
+                      className="font-body text-lg text-white/80 mt-1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.45 }}
+                    >
+                      wins the round!
+                    </motion.p>
+                  </div>
+                </motion.div>
+              ) : (
+                /* Full results card */
+                <motion.div
+                  key="full-results"
+                  initial={{ scale: 0.85, opacity: 0, y: 20 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', duration: 0.5 }}
+                  className="bg-cream rounded-3xl p-5 w-full max-w-sm shadow-2xl"
                 >
-                  Return to Room
+                  {/* Header with animated emoji */}
+                  <div className="text-center mb-4">
+                    <motion.div
+                      className="text-4xl mb-1 inline-block"
+                      initial={{ scale: 0, rotate: -20 }}
+                      animate={
+                        myRank === 1
+                          ? { scale: [0, 1.4, 1], rotate: [-20, 10, 0] }
+                          : isPodium
+                          ? { scale: [0, 1.3, 1], rotate: [0, -8, 0] }
+                          : { scale: [0, 1.1, 1], rotate: [0, 5, -5, 0] }
+                      }
+                      transition={{ delay: 0.15, duration: 0.6, type: 'spring' }}
+                    >
+                      {gameOverEmoji}
+                    </motion.div>
+                    <motion.h2
+                      className={`font-display text-2xl font-bold ${gameOverTitleColor}`}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      {gameOverTitle}
+                    </motion.h2>
+                    {gameOverSubtitle && (
+                      <motion.p
+                        className="text-sm text-kopi-brown/60 font-body mt-0.5"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.45 }}
+                      >
+                        {gameOverSubtitle}
+                      </motion.p>
+                    )}
+                  </div>
+
+                  {/* Standings table — scrollable for large groups */}
+                  <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
+                    <div className="grid grid-cols-[1.5rem_1fr_4rem_3.5rem_3.5rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
+                      <span>#</span>
+                      <span>Name</span>
+                      <span className="text-right">Drinks</span>
+                      <span className="text-right">Drops</span>
+                      <span className="text-right">Avg</span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {standings.map((p, i) => {
+                        const isMe = p.device_id === deviceId
+                        const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
+                        const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
+                        const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
+
+                        return (
+                          <motion.div
+                            key={p.device_id}
+                            className={`grid grid-cols-[1.5rem_1fr_4rem_3.5rem_3.5rem] items-center px-2 py-1.5 font-body ${
+                              isMe ? 'bg-warm-yellow/30 font-bold' : ''
+                            } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 + i * 0.06 }}
+                          >
+                            <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
+                            <span className="text-kopi-brown truncate">
+                              {p.player_name}
+                              {p.disconnected_at && <span className="text-kopi-brown/40 ml-1">(left)</span>}
+                            </span>
+                            <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
+                            <span className={`text-right font-display font-bold ${hasFewestDrops ? 'text-hawker-green' : 'text-kopi-brown/60'}`}>
+                              {p.lives_lost > 0 ? `−${p.lives_lost}` : '0'}
+                            </span>
+                            <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
+                              {avgSec}
+                            </span>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleReturnToRoom}
+                      className="w-full px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-600/90
+                        text-white font-display font-bold text-lg cursor-pointer transition-colors shadow-md"
+                    >
+                      Return to Room
+                    </button>
+                    <button
+                      onClick={() => { stop(500); navigate('/') }}
+                      className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
+                        text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
+                    >
+                      Back to Menu
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Quit confirmation modal */}
+      <AnimatePresence>
+        {showQuitModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="bg-cream rounded-3xl p-6 mx-4 max-w-xs w-full shadow-2xl text-center"
+            >
+              <h3 className="font-display text-xl font-bold text-kopi-brown mb-2">Leave the party?</h3>
+              <p className="text-sm text-kopi-brown/60 mb-5 font-body">
+                You'll be disconnected and your friends will play on without you.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleQuitConfirm}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-hawker-red hover:bg-hawker-red/90
+                    text-white font-display font-bold cursor-pointer transition-colors"
+                >
+                  Leave
                 </button>
                 <button
-                  onClick={() => { stop(500); navigate('/') }}
-                  className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
-                    text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
+                  onClick={handleQuitCancel}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-kopi-brown/20 hover:bg-kopi-brown/30
+                    text-kopi-brown font-display font-bold cursor-pointer transition-colors"
                 >
-                  Back to Menu
+                  Stay
                 </button>
               </div>
             </motion.div>

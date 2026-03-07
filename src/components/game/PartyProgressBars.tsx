@@ -48,9 +48,14 @@ function ProgressBar({
           transition={{ type: 'spring', stiffness: 120, damping: 20 }}
         />
       </div>
-      <span className="text-xs font-body text-kopi-brown/60 tabular-nums w-10 text-right flex-shrink-0">
-        {drinks}/{winTarget}
-      </span>
+      <div className="text-right flex-shrink-0 w-14">
+        <div className="text-xs font-body text-kopi-brown/60 tabular-nums">{drinks}/{winTarget}</div>
+        {!isSelf && isAlert && winTarget - drinks > 0 && (
+          <div className="text-[10px] font-display font-bold text-hawker-red leading-tight">
+            {winTarget - drinks} to go!
+          </div>
+        )}
+      </div>
     </motion.div>
   )
 }
