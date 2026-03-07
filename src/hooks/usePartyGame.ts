@@ -50,6 +50,22 @@ export function usePartyGame({ roomCode, deviceId, winTarget, startLevel }: UseP
     }
   }, [game.cupNumber, roomCode, deviceId, winTarget, startCupThreshold])
 
+  // Sync lives_lost on every life change — covers players who drop lives without
+  // ever serving a correct drink (the cupNumber effect above never fires for them).
+  useEffect(() => {
+    if (game.phase === 'idle') return
+    const startLivesCount = startLevel > 1 ? STARTING_LIVES + 1 : STARTING_LIVES
+    const livesLost = Math.max(0, startLivesCount - game.lives)
+    supabase
+      .from('room_players')
+      .update({ lives_lost: livesLost })
+      .eq('room_code', roomCode)
+      .eq('device_id', deviceId)
+      .then(({ error }) => {
+        if (error) console.error('[Party] Failed to sync lives_lost:', error)
+      })
+  }, [game.lives, game.phase, roomCode, deviceId, startLevel])
+
   // Auto-acknowledge errors after 2s — no error modal in party mode
   useEffect(() => {
     if (game.phase !== 'errorAck') return
