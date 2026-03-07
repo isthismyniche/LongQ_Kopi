@@ -5,6 +5,8 @@ export interface PartyPlayer {
   device_id: string
   player_name: string
   drinks: number
+  lives_lost: number
+  avg_time_ms: number
   is_host: boolean
   disconnected_at: string | null
   joined_at: string
@@ -49,7 +51,7 @@ export function usePartyRoom(roomCode: string, deviceId: string): UsePartyRoomRe
         .single(),
       supabase
         .from('room_players')
-        .select('device_id,player_name,drinks,is_host,disconnected_at,joined_at')
+        .select('device_id,player_name,drinks,lives_lost,avg_time_ms,is_host,disconnected_at,joined_at')
         .eq('room_code', roomCode)
         .order('joined_at', { ascending: true }),
     ]).then(([roomRes, playersRes]) => {

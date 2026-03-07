@@ -9,9 +9,11 @@ import PartyProgressBars from '../components/game/PartyProgressBars'
 import { usePartyGame } from '../hooks/usePartyGame'
 import { usePartyRoom } from '../hooks/usePartyRoom'
 import { useSounds } from '../hooks/useSounds'
+import { useMusicManager } from '../hooks/useMusicManager'
 import { loadSettings } from './Settings'
 import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
 import { trackEvent } from '../utils/analytics'
+import { STARTING_LIVES } from '../data/gameConfig'
 
 interface LocationState {
   deviceId: string
@@ -36,8 +38,12 @@ export default function PartyGame() {
   const game = usePartyGame({ roomCode, deviceId, winTarget, startLevel })
 
   const sounds = useSounds()
+  const [soundEnabled] = useState(() => loadSettings().soundEnabled)
+  const { setMusicState, play, stop, duck, unduck } = useMusicManager(soundEnabled)
   const [shortcuts, setShortcuts] = useState<ShortcutEntry[]>([])
   const prevResultRef = useRef(game.orderResult)
+  const prevPhaseRef = useRef(game.phase)
+  const prevLevelRef = useRef(game.level.level)
   const gameStarted = useRef(false)
 
   // Guard: no state → redirect to lobby
@@ -67,6 +73,26 @@ export default function PartyGame() {
       game.pauseTimer()
     }
   }, [isFinished, game.timer.isRunning, game.pauseTimer])
+
+  // Music: phase transitions
+  useEffect(() => {
+    const prev = prevPhaseRef.current
+    if (game.phase === 'playing' && prev === 'idle') play()
+    if (game.phase === 'errorAck') duck()
+    if (prev === 'errorAck' && (game.phase === 'transition' || game.phase === 'playing')) unduck()
+    if (isFinished && prev !== 'idle') stop()
+    prevPhaseRef.current = game.phase
+  }, [game.phase, isFinished, play, stop, duck, unduck])
+
+  // Music: update track on level change
+  useEffect(() => {
+    if (game.level.level !== prevLevelRef.current) {
+      prevLevelRef.current = game.level.level
+      if (game.phase === 'playing' || game.phase === 'transition') {
+        setMusicState(game.level.level as 1|2|3|4|5, game.lives <= 1)
+      }
+    }
+  }, [game.level.level, game.phase, game.lives, setMusicState])
 
   // Sound effects on order result changes
   useEffect(() => {
@@ -117,19 +143,32 @@ export default function PartyGame() {
   const withClick = <T extends unknown[]>(fn: (...args: T) => void) =>
     (...args: T) => { sounds.playClick(); fn(...args) }
 
+  const handleQuit = async () => {
+    stop(500)
+    try {
+      await fetch('/api/party/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomCode, deviceId, action: 'disconnect' }),
+      })
+    } catch { /* non-critical */ }
+    navigate('/')
+  }
+
   const handleReturnToRoom = async () => {
+    stop(500)
     try {
       await fetch('/api/party/return-to-room', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomCode, deviceId, playerName }),
       })
-    } catch {
-      // Non-critical — navigate anyway
-    }
+    } catch { /* non-critical */ }
     navigate('/party', { state: { rejoinCode: roomCode } })
   }
 
+  const startLivesCount = startLevel > 1 ? STARTING_LIVES + 1 : STARTING_LIVES
+  const livesLost = Math.max(0, startLivesCount - game.lives)
   const myDrinks = myPlayer?.drinks ?? 0
 
   if (game.phase === 'idle') {
@@ -142,6 +181,15 @@ export default function PartyGame() {
 
   // Sorted final standings for game over overlay
   const standings = [...players].sort((a, b) => b.drinks - a.drinks)
+
+  // Highlight helpers: best (lowest) avg time among players who served ≥1 drink
+  const servingPlayers = standings.filter(p => p.drinks > 0)
+  const minAvgTimeMs = servingPlayers.length > 0
+    ? Math.min(...servingPlayers.map(p => p.avg_time_ms))
+    : null
+  const minLivesLost = standings.length > 0
+    ? Math.min(...standings.map(p => p.lives_lost))
+    : null
 
   return (
     <PageWrapper className="flex flex-col h-full bg-gradient-to-b from-warm-yellow/30 to-cream overflow-hidden">
@@ -156,6 +204,8 @@ export default function PartyGame() {
           level={game.level}
           cupNumber={game.cupNumber}
           hideScore
+          livesLost={livesLost}
+          onQuit={handleQuit}
         />
       </div>
 
@@ -246,58 +296,75 @@ export default function PartyGame() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           >
             <motion.div
               initial={{ scale: 0.85, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className="bg-cream rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl"
+              className="bg-cream rounded-3xl p-5 w-full max-w-sm shadow-2xl"
             >
               <div className="text-center mb-4">
                 {isWinner ? (
                   <>
-                    <div className="text-5xl mb-2">🏆</div>
-                    <h2 className="font-display text-3xl font-bold text-hawker-green">You Win!</h2>
+                    <div className="text-4xl mb-1">🏆</div>
+                    <h2 className="font-display text-2xl font-bold text-hawker-green">You Win!</h2>
                   </>
                 ) : (
                   <>
-                    <div className="text-5xl mb-2">☕</div>
-                    <h2 className="font-display text-3xl font-bold text-kopi-brown">Game Over</h2>
+                    <div className="text-4xl mb-1">☕</div>
+                    <h2 className="font-display text-2xl font-bold text-kopi-brown">Game Over</h2>
                   </>
                 )}
               </div>
 
               {/* Standings table */}
-              <div className="bg-white/60 rounded-2xl overflow-hidden mb-4">
-                <div className="grid grid-cols-[2rem_1fr_3rem] text-xs font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-3 py-2 border-b border-kopi-brown/10">
+              <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
+                {/* Header */}
+                <div className="grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
                   <span>#</span>
                   <span>Name</span>
-                  <span className="text-right">Drinks</span>
+                  <span className="text-right">☕</span>
+                  <span className="text-right">−♥</span>
+                  <span className="text-right">Avg</span>
                 </div>
-                {standings.map((p, i) => (
-                  <div
-                    key={p.device_id}
-                    className={`grid grid-cols-[2rem_1fr_3rem] items-center px-3 py-2 text-sm font-body ${
-                      p.device_id === deviceId
-                        ? 'bg-warm-yellow/30 font-bold'
-                        : ''
-                    } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
-                  >
-                    <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
-                    <span className="text-kopi-brown truncate">
-                      {p.player_name}
-                      {p.disconnected_at && (
-                        <span className="text-xs text-kopi-brown/40 ml-1">(left)</span>
-                      )}
-                      {p.device_id === deviceId && (
-                        <span className="text-xs text-purple-500 ml-1">← you</span>
-                      )}
-                    </span>
-                    <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
-                  </div>
-                ))}
+                {standings.map((p, i) => {
+                  const isMe = p.device_id === deviceId
+                  const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
+                  const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
+                  const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
+
+                  return (
+                    <div
+                      key={p.device_id}
+                      className={`grid grid-cols-[1.5rem_1fr_2.5rem_2.5rem_3rem] items-center px-2 py-1.5 font-body ${
+                        isMe ? 'bg-warm-yellow/30 font-bold' : ''
+                      } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
+                    >
+                      <span className="text-kopi-brown/50 font-display font-bold">{i + 1}</span>
+                      <span className="text-kopi-brown truncate">
+                        {p.player_name}
+                        {p.disconnected_at && <span className="text-kopi-brown/40 ml-1">(left)</span>}
+                      </span>
+                      <span className="text-kopi-brown font-display font-bold text-right">{p.drinks}</span>
+                      <span className={`text-right font-display font-bold ${hasFewestDrops ? 'text-hawker-green' : 'text-kopi-brown/60'}`}>
+                        {p.lives_lost > 0 ? `−${p.lives_lost}` : '0'}
+                      </span>
+                      <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
+                        {avgSec}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
+
+              {/* Legend for highlights */}
+              {(servingPlayers.length > 1 || standings.length > 1) && (
+                <div className="flex gap-3 mb-3 text-[10px] font-body text-kopi-brown/50">
+                  {standings.length > 1 && <span><span className="text-hawker-green font-bold">Green −♥</span> = fewest dropped</span>}
+                  {servingPlayers.length > 1 && <span><span className="text-purple-600 font-bold">Purple avg</span> = fastest</span>}
+                </div>
+              )}
 
               <div className="flex flex-col gap-2">
                 <button
@@ -308,7 +375,7 @@ export default function PartyGame() {
                   Return to Room
                 </button>
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => { stop(500); navigate('/') }}
                   className="w-full px-4 py-2.5 rounded-xl bg-kopi-brown/15 hover:bg-kopi-brown/25
                     text-kopi-brown font-display font-bold text-sm cursor-pointer transition-colors"
                 >

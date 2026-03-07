@@ -337,7 +337,7 @@ export default function PartyLobby() {
           Party Mode
         </h1>
         <p className="text-sm text-kopi-brown/60 font-body mb-8 text-center">
-          2–12 players race to serve drinks. First to the target wins!
+          Up to 12 players race to serve drinks. First to the target wins!
         </p>
 
         <AnimatePresence mode="wait">

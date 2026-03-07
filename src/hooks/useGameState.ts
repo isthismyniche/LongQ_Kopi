@@ -390,10 +390,15 @@ export function useGameState(opts?: { versusMode?: boolean }) {
 
         setPhase('transition')
         setTimeout(() => {
-          setPhase('levelup')
-          setTimeout(() => {
+          if (versusModeRef.current) {
+            // Skip the 3 s level-up screen in multiplayer — advance immediately
             advanceToNextCustomer()
-          }, LEVEL_TRANSITION_MS)
+          } else {
+            setPhase('levelup')
+            setTimeout(() => {
+              advanceToNextCustomer()
+            }, LEVEL_TRANSITION_MS)
+          }
         }, TRANSITION_DURATION_MS)
       } else {
         // Levels 4-5: flash the green bubble briefly then instantly serve the next customer

@@ -11,9 +11,10 @@ interface HUDProps {
   cupNumber: number
   onQuit?: () => void
   hideScore?: boolean
+  livesLost?: number  // party mode: show count of lives lost instead of hearts
 }
 
-export default function HUD({ score, lives, secondsRemaining, isTimerRunning, lastPoints, level, cupNumber, onQuit, hideScore }: HUDProps) {
+export default function HUD({ score, lives, secondsRemaining, isTimerRunning, lastPoints, level, cupNumber, onQuit, hideScore, livesLost }: HUDProps) {
   // Show empty bar and no seconds when the timer isn't actively running (between orders,
   // error panel, level transition). This prevents the stale frozen-time display in L4-5
   // where the 350 ms gap would otherwise show the previous order's remaining time.
@@ -94,23 +95,32 @@ export default function HUD({ score, lives, secondsRemaining, isTimerRunning, la
         </span>
 
         {/* Lives */}
-        <div className="flex items-center gap-1">
-          <span className="font-display text-sm font-bold text-kopi-brown/60">LIVES</span>
-          {Array.from({ length: STARTING_LIVES }).map((_, i) => (
-            <svg
-              key={i}
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              className={`transition-opacity ${i < lives ? 'opacity-100' : 'opacity-20'}`}
-            >
-              <path
-                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                fill={i < lives ? '#C41E3A' : '#ccc'}
-              />
-            </svg>
-          ))}
-        </div>
+        {livesLost !== undefined ? (
+          <div className="flex items-center gap-1">
+            <span className="font-display text-sm font-bold text-kopi-brown/60">DROPPED</span>
+            <span className={`font-display text-xl font-bold ${livesLost > 0 ? 'text-hawker-red' : 'text-kopi-brown/40'}`}>
+              {livesLost > 0 ? `−${livesLost}` : '0'}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <span className="font-display text-sm font-bold text-kopi-brown/60">LIVES</span>
+            {Array.from({ length: STARTING_LIVES }).map((_, i) => (
+              <svg
+                key={i}
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                className={`transition-opacity ${i < lives ? 'opacity-100' : 'opacity-20'}`}
+              >
+                <path
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                  fill={i < lives ? '#C41E3A' : '#ccc'}
+                />
+              </svg>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

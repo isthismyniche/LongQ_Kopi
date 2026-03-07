@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useGameState } from './useGameState'
 import { supabase } from '../utils/supabase'
-import { getCupThresholdForLevel } from '../data/gameConfig'
+import { getCupThresholdForLevel, STARTING_LIVES } from '../data/gameConfig'
 
 interface UsePartyGameOpts {
   roomCode: string
@@ -23,10 +23,13 @@ export function usePartyGame({ roomCode, deviceId, winTarget, startLevel }: UseP
     prevCupNumber.current = game.cupNumber
 
     const drinksThisGame = game.cupNumber - startCupThreshold
+    const startLivesCount = startLevel > 1 ? STARTING_LIVES + 1 : STARTING_LIVES
+    const livesLost = Math.max(0, startLivesCount - game.lives)
+    const avgTimeMs = Math.round(game.avgTime * 1000)
 
     supabase
       .from('room_players')
-      .update({ drinks: drinksThisGame })
+      .update({ drinks: drinksThisGame, lives_lost: livesLost, avg_time_ms: avgTimeMs })
       .eq('room_code', roomCode)
       .eq('device_id', deviceId)
       .then(({ error }) => {
