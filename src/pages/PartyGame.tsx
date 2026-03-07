@@ -57,6 +57,7 @@ export default function PartyGame() {
   const [countdown, setCountdown] = useState<number | null>(null)
   const [showWinnerSplash, setShowWinnerSplash] = useState(false)
   const winnerSplashDoneRef = useRef(false)
+  const wasFinishedRef = useRef(false)
 
   // Guard: no state → redirect to lobby (must be in useEffect — calling navigate during
   // render causes React to warn about updating a component while rendering a different one)
@@ -93,6 +94,18 @@ export default function PartyGame() {
       game.pauseTimer()
     }
   }, [isFinished, game.timer.isRunning, game.pauseTimer])
+
+  // When the host resets the room (status: finished → waiting), redirect all players
+  // who are still on this page back to the lobby. Without this, the game-over overlay
+  // disappears (isFinished → false) but game.phase remains 'playing', leaving the
+  // counter fully enabled and unguarded.
+  useEffect(() => {
+    if (isFinished) {
+      wasFinishedRef.current = true
+    } else if (wasFinishedRef.current && room?.status === 'waiting') {
+      navigate('/party', { state: { rejoinCode: roomCode } })
+    }
+  }, [isFinished, room?.status, navigate, roomCode])
 
   // Music: phase transitions
   useEffect(() => {
