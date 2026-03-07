@@ -4,8 +4,9 @@ import type { PartyPlayer } from '../../hooks/usePartyRoom'
 interface PartyProgressBarsProps {
   myDrinks: number
   myName: string
-  topOpponents: Pick<PartyPlayer, 'device_id' | 'player_name' | 'drinks'>[]
+  topOpponents: Pick<PartyPlayer, 'device_id' | 'player_name' | 'drinks' | 'blocked_ingredients'>[]
   winTarget: number
+  myBlockedCount: number
 }
 
 function ProgressBar({
@@ -14,12 +15,14 @@ function ProgressBar({
   winTarget,
   isSelf,
   isAlert,
+  blockedCount,
 }: {
   name: string
   drinks: number
   winTarget: number
   isSelf: boolean
   isAlert: boolean
+  blockedCount: number
 }) {
   const pct = Math.min(100, (drinks / winTarget) * 100)
 
@@ -37,6 +40,11 @@ function ProgressBar({
         }`}
       >
         {isSelf ? 'You' : name}
+        {blockedCount > 0 && (
+          <span className="text-[9px] text-hawker-red font-bold leading-none ml-0.5">
+            🧯×{blockedCount}
+          </span>
+        )}
       </span>
       <div className="flex-1 h-2 bg-kopi-brown/10 rounded-full overflow-hidden">
         <motion.div
@@ -65,6 +73,7 @@ export default function PartyProgressBars({
   myName,
   topOpponents,
   winTarget,
+  myBlockedCount,
 }: PartyProgressBarsProps) {
   const alertThreshold = winTarget - 5
 
@@ -76,6 +85,7 @@ export default function PartyProgressBars({
         winTarget={winTarget}
         isSelf
         isAlert={false}
+        blockedCount={myBlockedCount}
       />
       {topOpponents.map(opp => (
         <ProgressBar
@@ -85,6 +95,7 @@ export default function PartyProgressBars({
           winTarget={winTarget}
           isSelf={false}
           isAlert={opp.drinks >= alertThreshold}
+          blockedCount={opp.blocked_ingredients.length}
         />
       ))}
     </div>

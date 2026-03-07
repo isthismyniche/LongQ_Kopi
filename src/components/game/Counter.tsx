@@ -1,7 +1,8 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { MilkType } from '../../data/drinkMatrix'
 import type { CupContents } from '../../utils/orderValidation'
 import { formatKeyDisplay, type ShortcutEntry } from '../../data/keyboardShortcuts'
+import type { SaboIngredient } from '../../utils/saboConfig'
 import Cup from './Cup'
 
 interface CounterProps {
@@ -21,6 +22,7 @@ interface CounterProps {
   onDiscard: () => void
   onServe: () => void
   disabled: boolean
+  blockedIngredients?: SaboIngredient[]
 }
 
 function getKey(shortcuts: ShortcutEntry[], action: string): string {
@@ -254,6 +256,24 @@ function LessButton({
   )
 }
 
+function BlockedOverlay({ isBlocked }: { isBlocked: boolean }) {
+  return (
+    <AnimatePresence>
+      {isBlocked && (
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{ type: 'spring', duration: 0.3 }}
+          className="absolute inset-0 flex items-center justify-center bg-hawker-red/85 rounded-xl pointer-events-none z-10"
+        >
+          <span className="text-white font-bold text-lg leading-none">✕</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function Counter({
   cup,
   lessToggle,
@@ -271,7 +291,9 @@ export default function Counter({
   onDiscard,
   onServe,
   disabled,
+  blockedIngredients = [],
 }: CounterProps) {
+  const blocked = blockedIngredients
   const sugarLabel = cup.sugar === 'None' ? 'Sugar' : cup.sugar === 'Half' ? 'Sugar (½)' : 'Sugar (1)'
 
   return (
@@ -284,24 +306,30 @@ export default function Counter({
         {/* Left: Dispensers + Less */}
         <div className="flex flex-col gap-1.5 items-center">
           <div className="flex gap-1">
-            <IconButton
-              onClick={() => onAddBase('Kopi')}
-              icon={<KopiPotIcon />}
-              label={lessToggle ? 'Kopi (½)' : 'Kopi'}
-              className="bg-kopi-brown text-white"
-              disabled={disabled}
-              ariaLabel="Add Kopi base"
-              shortcut={getKey(shortcuts, 'kopi')}
-            />
-            <IconButton
-              onClick={() => onAddBase('Teh')}
-              icon={<TehPotIcon />}
-              label={lessToggle ? 'Teh (½)' : 'Teh'}
-              className="bg-teh-amber text-white"
-              disabled={disabled}
-              ariaLabel="Add Teh base"
-              shortcut={getKey(shortcuts, 'teh')}
-            />
+            <div className="relative">
+              <IconButton
+                onClick={() => onAddBase('Kopi')}
+                icon={<KopiPotIcon />}
+                label={lessToggle ? 'Kopi (½)' : 'Kopi'}
+                className="bg-kopi-brown text-white"
+                disabled={disabled || blocked.includes('kopi')}
+                ariaLabel="Add Kopi base"
+                shortcut={getKey(shortcuts, 'kopi')}
+              />
+              <BlockedOverlay isBlocked={blocked.includes('kopi')} />
+            </div>
+            <div className="relative">
+              <IconButton
+                onClick={() => onAddBase('Teh')}
+                icon={<TehPotIcon />}
+                label={lessToggle ? 'Teh (½)' : 'Teh'}
+                className="bg-teh-amber text-white"
+                disabled={disabled || blocked.includes('teh')}
+                ariaLabel="Add Teh base"
+                shortcut={getKey(shortcuts, 'teh')}
+              />
+              <BlockedOverlay isBlocked={blocked.includes('teh')} />
+            </div>
           </div>
           <LessButton
             onClick={onToggleLess}
@@ -315,15 +343,18 @@ export default function Counter({
         {/* Center: Hot water tap above cup */}
         <div className="flex flex-col items-center gap-0">
           {/* Hot water tap — sits above the cup */}
-          <IconButton
-            onClick={onAddHotWater}
-            icon={<HotWaterTapIcon />}
-            label="Hot Water"
-            className={cup.hasHotWater ? 'bg-blue-400 text-white ring-2 ring-blue-300' : 'bg-gray-500 text-white'}
-            disabled={disabled || cup.hasHotWater}
-            ariaLabel="Add hot water"
-            shortcut={getKey(shortcuts, 'hotWater')}
-          />
+          <div className="relative">
+            <IconButton
+              onClick={onAddHotWater}
+              icon={<HotWaterTapIcon />}
+              label="Hot Water"
+              className={cup.hasHotWater ? 'bg-blue-400 text-white ring-2 ring-blue-300' : 'bg-gray-500 text-white'}
+              disabled={disabled || cup.hasHotWater || blocked.includes('hotwater')}
+              ariaLabel="Add hot water"
+              shortcut={getKey(shortcuts, 'hotWater')}
+            />
+            <BlockedOverlay isBlocked={blocked.includes('hotwater')} />
+          </div>
 
           <Cup contents={cup} />
 
@@ -360,59 +391,71 @@ export default function Counter({
               <LessButton
                 onClick={onToggleCondensedLess}
                 active={condensedLessToggle}
-                disabled={disabled || cup.milk !== 'None'}
+                disabled={disabled || cup.milk !== 'None' || blocked.includes('condensed')}
                 ariaLabel="Toggle less for condensed milk"
                 shortcut={getKey(shortcuts, 'lessCondensed')}
               />
-              <IconButton
-                onClick={() => onSetMilk('Condensed')}
-                icon={<CondensedCanIcon />}
-                label={condensedLessToggle ? 'Condensed (½)' : 'Condensed'}
-                className={cup.milk === 'Condensed' ? 'bg-condensed text-kopi-brown ring-2 ring-kopi-brown' : 'bg-condensed text-kopi-brown'}
-                disabled={disabled || cup.milk !== 'None'}
-                ariaLabel="Add condensed milk"
-                shortcut={getKey(shortcuts, 'condensedMilk')}
-              />
+              <div className="relative">
+                <IconButton
+                  onClick={() => onSetMilk('Condensed')}
+                  icon={<CondensedCanIcon />}
+                  label={condensedLessToggle ? 'Condensed (½)' : 'Condensed'}
+                  className={cup.milk === 'Condensed' ? 'bg-condensed text-kopi-brown ring-2 ring-kopi-brown' : 'bg-condensed text-kopi-brown'}
+                  disabled={disabled || cup.milk !== 'None' || blocked.includes('condensed')}
+                  ariaLabel="Add condensed milk"
+                  shortcut={getKey(shortcuts, 'condensedMilk')}
+                />
+                <BlockedOverlay isBlocked={blocked.includes('condensed')} />
+              </div>
             </div>
-            <IconButton
-              onClick={() => onSetMilk('Evaporated')}
-              icon={<EvaporatedCanIcon />}
-              label="Evaporated"
-              className={cup.milk === 'Evaporated' ? 'bg-evaporated text-kopi-brown ring-2 ring-kopi-brown' : 'bg-evaporated text-kopi-brown'}
-              disabled={disabled || cup.milk !== 'None'}
-              ariaLabel="Add evaporated milk"
-              shortcut={getKey(shortcuts, 'evaporatedMilk')}
-            />
+            <div className="relative">
+              <IconButton
+                onClick={() => onSetMilk('Evaporated')}
+                icon={<EvaporatedCanIcon />}
+                label="Evaporated"
+                className={cup.milk === 'Evaporated' ? 'bg-evaporated text-kopi-brown ring-2 ring-kopi-brown' : 'bg-evaporated text-kopi-brown'}
+                disabled={disabled || cup.milk !== 'None' || blocked.includes('evaporated')}
+                ariaLabel="Add evaporated milk"
+                shortcut={getKey(shortcuts, 'evaporatedMilk')}
+              />
+              <BlockedOverlay isBlocked={blocked.includes('evaporated')} />
+            </div>
           </div>
           {/* Sugar + its Less toggle grouped together, Ice aligned to top */}
           <div className="flex gap-1 items-start">
             <div className="flex flex-col items-center gap-0.5">
-              <IconButton
-                onClick={onAddSugar}
-                icon={<SugarDispenserIcon />}
-                label={sugarLabel}
-                className={cup.sugar !== 'None' ? 'bg-warm-yellow text-kopi-brown ring-2 ring-kopi-brown' : 'bg-warm-yellow/80 text-kopi-brown'}
-                disabled={disabled || cup.sugar !== 'None'}
-                ariaLabel="Add sugar"
-                shortcut={getKey(shortcuts, 'sugar')}
-              />
+              <div className="relative">
+                <IconButton
+                  onClick={onAddSugar}
+                  icon={<SugarDispenserIcon />}
+                  label={sugarLabel}
+                  className={cup.sugar !== 'None' ? 'bg-warm-yellow text-kopi-brown ring-2 ring-kopi-brown' : 'bg-warm-yellow/80 text-kopi-brown'}
+                  disabled={disabled || cup.sugar !== 'None' || blocked.includes('sugar')}
+                  ariaLabel="Add sugar"
+                  shortcut={getKey(shortcuts, 'sugar')}
+                />
+                <BlockedOverlay isBlocked={blocked.includes('sugar')} />
+              </div>
               <LessButton
                 onClick={onToggleSugarLess}
                 active={sugarLessToggle}
-                disabled={disabled || cup.sugar !== 'None'}
+                disabled={disabled || cup.sugar !== 'None' || blocked.includes('sugar')}
                 ariaLabel="Toggle less for sugar"
                 shortcut={getKey(shortcuts, 'lessSugar')}
               />
             </div>
-            <IconButton
-              onClick={onAddIce}
-              icon={<IceBucketIcon />}
-              label="Ice"
-              className={cup.hasIce ? 'bg-blue-300 text-blue-900 ring-2 ring-blue-500' : 'bg-blue-200 text-blue-800'}
-              disabled={disabled || cup.hasIce}
-              ariaLabel="Add ice"
-              shortcut={getKey(shortcuts, 'ice')}
-            />
+            <div className="relative">
+              <IconButton
+                onClick={onAddIce}
+                icon={<IceBucketIcon />}
+                label="Ice"
+                className={cup.hasIce ? 'bg-blue-300 text-blue-900 ring-2 ring-blue-500' : 'bg-blue-200 text-blue-800'}
+                disabled={disabled || cup.hasIce || blocked.includes('ice')}
+                ariaLabel="Add ice"
+                shortcut={getKey(shortcuts, 'ice')}
+              />
+              <BlockedOverlay isBlocked={blocked.includes('ice')} />
+            </div>
           </div>
         </div>
       </div>

@@ -15,6 +15,8 @@ import { loadSettings } from './Settings'
 import { loadShortcuts, type ShortcutEntry } from '../data/keyboardShortcuts'
 import { trackEvent } from '../utils/analytics'
 import { STARTING_LIVES } from '../data/gameConfig'
+import { getSaboCharges, INGREDIENT_LABELS, ALL_INGREDIENTS, type SaboIngredient } from '../utils/saboConfig'
+import type { PartyPlayer } from '../hooks/usePartyRoom'
 
 function ordinalSuffix(n: number): string {
   if (n % 100 >= 11 && n % 100 <= 13) return 'th'
@@ -58,6 +60,9 @@ export default function PartyGame() {
   const prevLevelRef = useRef(game.level.level)
   const gameStarted = useRef(false)
   const [showQuitModal, setShowQuitModal] = useState(false)
+  const [saboModalOpen, setSaboModalOpen] = useState(false)
+  const [saboNotification, setSaboNotification] = useState<string | null>(null)
+  const saboNotifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Start at 3 immediately so the first render shows "3", not "Loading..."
   const [countdown, setCountdown] = useState<number | null>(3)
   const [showWinnerSplash, setShowWinnerSplash] = useState(false)
@@ -207,6 +212,16 @@ export default function PartyGame() {
     return () => clearTimeout(t)
   }, [isFinished])
 
+  // Sabo notification watcher
+  useEffect(() => {
+    if (!game.latestSabo) return
+    const ev = game.latestSabo
+    const label = INGREDIENT_LABELS[ev.ingredient as SaboIngredient] ?? ev.ingredient
+    setSaboNotification(`${ev.from_name} sabo-ed ${ev.to_name} — no ${label} for 5 turns!`)
+    if (saboNotifTimerRef.current) clearTimeout(saboNotifTimerRef.current)
+    saboNotifTimerRef.current = setTimeout(() => setSaboNotification(null), 3500)
+  }, [game.latestSabo])
+
   const handleQuitOpen = useCallback(() => {
     if (isFinished) return
     game.pauseTimer()
@@ -231,6 +246,21 @@ export default function PartyGame() {
     navigate('/')
   }, [stop, roomCode, deviceId, navigate])
 
+  const handleSabo = async (opp: PartyPlayer) => {
+    setSaboModalOpen(false)
+    await fetch('/api/party/sabo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roomCode,
+        fromDeviceId: deviceId,
+        fromName: playerName,
+        toDeviceId: opp.device_id,
+        toName: opp.player_name,
+      }),
+    }).catch(() => {})
+  }
+
   const handleReturnToRoom = async () => {
     stop(500)
     try {
@@ -246,6 +276,10 @@ export default function PartyGame() {
   const startLivesCount = startLevel > 1 ? STARTING_LIVES + 1 : STARTING_LIVES
   const livesLost = Math.max(0, startLivesCount - game.lives)
   const myDrinks = myPlayer?.drinks ?? 0
+
+  const maxSaboCharges = getSaboCharges(winTarget)
+  const usedSaboCharges = myPlayer?.sabos_used ?? 0
+  const remainingSaboCharges = Math.max(0, maxSaboCharges - usedSaboCharges)
 
   const sortedByDrinks = [...activePlayers].sort((a, b) => b.drinks - a.drinks)
   const myCurrentRank = sortedByDrinks.findIndex(p => p.device_id === deviceId) + 1
@@ -338,23 +372,39 @@ export default function PartyGame() {
         />
       </div>
 
-      {/* Party progress bars + live rank */}
+      {/* Party progress bars + live rank + sabo button */}
       <div className="flex-shrink-0">
         <PartyProgressBars
           myDrinks={myDrinks}
           myName={playerName}
           topOpponents={topOpponents}
           winTarget={winTarget}
+          myBlockedCount={game.blockedIngredients.length}
         />
-        {activePlayers.length > 1 && myCurrentRank > 0 && (
-          <p className="text-center text-[11px] text-kopi-brown/40 font-body pb-0.5">
-            You're{' '}
-            <span className="font-bold text-kopi-brown/60">
-              {myCurrentRank}{ordinalSuffix(myCurrentRank)}
-            </span>
-            {' '}of {activePlayers.length}
-          </p>
-        )}
+        <div className="flex items-center justify-between px-3 pb-0.5 min-h-[24px]">
+          {activePlayers.length > 1 && myCurrentRank > 0
+            ? <p className="text-[11px] text-kopi-brown/40 font-body">
+                You're{' '}
+                <span className="font-bold text-kopi-brown/60">
+                  {myCurrentRank}{ordinalSuffix(myCurrentRank)}
+                </span>
+                {' '}of {activePlayers.length}
+              </p>
+            : <span />}
+
+          {maxSaboCharges > 0 && (
+            <button
+              onClick={() => setSaboModalOpen(true)}
+              disabled={remainingSaboCharges === 0 || game.phase !== 'playing' || isFinished}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg
+                bg-hawker-red/10 hover:bg-hawker-red/20 text-hawker-red
+                font-display font-bold text-xs cursor-pointer transition-colors
+                disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              🧯 {remainingSaboCharges}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Customer area */}
@@ -423,6 +473,7 @@ export default function PartyGame() {
             onDiscard={withClick(game.discardCup)}
             onServe={game.serve}
             disabled={game.phase !== 'playing'}
+            blockedIngredients={game.blockedIngredients}
           />
         </motion.div>
       </div>
@@ -521,12 +572,13 @@ export default function PartyGame() {
 
                   {/* Standings table — scrollable for large groups */}
                   <div className="bg-white/60 rounded-2xl overflow-hidden mb-4 text-xs">
-                    <div className="grid grid-cols-[1.5rem_1fr_4rem_3.5rem_3.5rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
+                    <div className="grid grid-cols-[1.5rem_1fr_3.5rem_3rem_3rem_3rem] font-display font-bold text-kopi-brown/50 uppercase tracking-wide px-2 py-1.5 border-b border-kopi-brown/10">
                       <span>#</span>
                       <span>Name</span>
                       <span className="text-right">Drinks</span>
                       <span className="text-right">Drops</span>
                       <span className="text-right">Avg</span>
+                      <span className="text-right">Sabo'd</span>
                     </div>
                     <div className="max-h-48 overflow-y-auto">
                       {standings.map((p, i) => {
@@ -534,11 +586,13 @@ export default function PartyGame() {
                         const hasFastestAvg = p.avg_time_ms > 0 && p.avg_time_ms === minAvgTimeMs && servingPlayers.length > 1
                         const hasFewestDrops = p.lives_lost === minLivesLost && standings.length > 1 && minLivesLost !== null
                         const avgSec = p.avg_time_ms > 0 ? (p.avg_time_ms / 1000).toFixed(1) + 's' : '—'
+                        const maxSabosReceived = Math.max(0, ...standings.map(s => s.sabos_received))
+                        const hasMostSabos = p.sabos_received > 0 && p.sabos_received === maxSabosReceived && standings.length > 1
 
                         return (
                           <motion.div
                             key={p.device_id}
-                            className={`grid grid-cols-[1.5rem_1fr_4rem_3.5rem_3.5rem] items-center px-2 py-1.5 font-body ${
+                            className={`grid grid-cols-[1.5rem_1fr_3.5rem_3rem_3rem_3rem] items-center px-2 py-1.5 font-body ${
                               isMe ? 'bg-warm-yellow/30 font-bold' : ''
                             } ${i < standings.length - 1 ? 'border-b border-kopi-brown/5' : ''}`}
                             initial={{ opacity: 0, x: -10 }}
@@ -556,6 +610,9 @@ export default function PartyGame() {
                             </span>
                             <span className={`text-right font-display font-bold ${hasFastestAvg ? 'text-purple-600' : 'text-kopi-brown/60'}`}>
                               {avgSec}
+                            </span>
+                            <span className={`text-right font-display font-bold ${hasMostSabos ? 'text-hawker-red' : 'text-kopi-brown/60'}`}>
+                              {p.sabos_received > 0 ? p.sabos_received : '—'}
                             </span>
                           </motion.div>
                         )
@@ -582,6 +639,73 @@ export default function PartyGame() {
                 </motion.div>
               )}
             </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sabo notification banner — fixed above all content */}
+      <AnimatePresence>
+        {saboNotification && (
+          <motion.div
+            key={saboNotification}
+            initial={{ y: -40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -40, opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed top-0 inset-x-0 z-[60] flex justify-center pt-2 px-4 pointer-events-none"
+          >
+            <div className="bg-hawker-red text-white text-xs font-body px-4 py-2 rounded-xl shadow-lg max-w-xs text-center">
+              {saboNotification}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Sabo — opponent selection modal */}
+      <AnimatePresence>
+        {saboModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="bg-cream rounded-3xl p-5 mx-4 max-w-xs w-full shadow-2xl"
+            >
+              <h3 className="font-display text-lg font-bold text-kopi-brown mb-0.5 text-center">Sabo who?</h3>
+              <p className="text-xs text-kopi-brown/50 font-body mb-4 text-center">
+                {remainingSaboCharges} sabo{remainingSaboCharges !== 1 ? 's' : ''} remaining
+              </p>
+              <div className="flex flex-col gap-2">
+                {activePlayers.filter(p => p.device_id !== deviceId).map(opp => {
+                  const fullyBlocked = opp.blocked_ingredients.length >= ALL_INGREDIENTS.length
+                  return (
+                    <button
+                      key={opp.device_id}
+                      onClick={() => handleSabo(opp)}
+                      disabled={fullyBlocked}
+                      className="w-full px-4 py-3 rounded-xl bg-hawker-red hover:bg-hawker-red/90
+                        text-white font-display font-bold cursor-pointer transition-colors
+                        disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {opp.player_name}
+                      {fullyBlocked && <span className="font-normal text-xs ml-1">(fully blocked)</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <button
+                onClick={() => setSaboModalOpen(false)}
+                className="w-full mt-3 text-sm text-kopi-brown/50 hover:text-kopi-brown/70 cursor-pointer font-body"
+              >
+                Cancel
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

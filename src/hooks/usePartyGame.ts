@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useGameState } from './useGameState'
 import { supabase } from '../utils/supabase'
 import { getCupThresholdForLevel, STARTING_LIVES } from '../data/gameConfig'
+import type { SaboIngredient } from '../utils/saboConfig'
 
 interface UsePartyGameOpts {
   roomCode: string
@@ -10,12 +11,28 @@ interface UsePartyGameOpts {
   startLevel: number
 }
 
+interface ActiveSabo { ingredient: SaboIngredient; turnsLeft: number }
+
+export interface SaboEvent {
+  id: number
+  room_code: string
+  from_device_id: string
+  from_name: string
+  to_device_id: string
+  to_name: string
+  ingredient: string
+  created_at: string
+}
+
 export function usePartyGame({ roomCode, deviceId, winTarget, startLevel }: UsePartyGameOpts) {
   const game = useGameState({ versusMode: true })
 
   const startCupThreshold = startLevel > 1 ? getCupThresholdForLevel(startLevel) : 0
   const prevCupNumber = useRef(startCupThreshold)
   const winDeclared = useRef(false)
+
+  const [activeSabos, setActiveSabos] = useState<ActiveSabo[]>([])
+  const [latestSabo, setLatestSabo] = useState<SaboEvent | null>(null)
 
   // Sync drinks count to room_players on each correct serve
   useEffect(() => {
@@ -87,5 +104,56 @@ export function usePartyGame({ roomCode, deviceId, winTarget, startLevel }: UseP
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [roomCode, deviceId])
 
-  return game
+  // sabo_events subscription
+  useEffect(() => {
+    const saboChannel = supabase
+      .channel(`party-sabos:${roomCode}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sabo_events',
+          filter: `room_code=eq.${roomCode}`,
+        },
+        (payload) => {
+          const ev = payload.new as SaboEvent
+          setLatestSabo(ev)
+          if (ev.to_device_id === deviceId) {
+            setActiveSabos(prev => [
+              ...prev,
+              { ingredient: ev.ingredient as SaboIngredient, turnsLeft: 5 },
+            ])
+          }
+        }
+      )
+      .subscribe()
+    return () => { supabase.removeChannel(saboChannel) }
+  }, [roomCode, deviceId])
+
+  // Sabo turn countdown — decrement when a new order begins (transition→playing)
+  const prevPhaseRef = useRef(game.phase)
+  useEffect(() => {
+    const prev = prevPhaseRef.current
+    prevPhaseRef.current = game.phase
+    if (game.phase !== 'playing' || prev === 'idle' || prev === 'playing') return
+
+    setActiveSabos(current => {
+      const next = current
+        .map(s => ({ ...s, turnsLeft: s.turnsLeft - 1 }))
+        .filter(s => s.turnsLeft > 0)
+      const stillBlocked = next.map(s => s.ingredient)
+      supabase
+        .from('room_players')
+        .update({ blocked_ingredients: stillBlocked })
+        .eq('room_code', roomCode)
+        .eq('device_id', deviceId)
+        .then()
+      return next
+    })
+  }, [game.phase, roomCode, deviceId])
+
+  const blockedIngredients = activeSabos.map(s => s.ingredient) as SaboIngredient[]
+
+  return { ...game, blockedIngredients, latestSabo }
 }
