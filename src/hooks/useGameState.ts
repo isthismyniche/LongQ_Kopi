@@ -367,7 +367,7 @@ export function useGameState(opts?: { versusMode?: boolean }) {
       const timeUsed = levelRef.current.timerSeconds - timer.secondsRemaining
       totalTimeUsedRef.current += timeUsed
 
-      const points = calculateScore(timer.secondsRemaining, levelRef.current.scoreMultiplier)
+      const points = calculateScore(levelRef.current.timerSeconds, timer.secondsRemaining, levelRef.current.scoreMultiplier)
       const newScore = scoreRef.current + points
       setScore(newScore)
       scoreRef.current = newScore
