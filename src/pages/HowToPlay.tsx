@@ -47,8 +47,16 @@ export default function HowToPlay() {
                 </ul>
                 <p className="text-sm mt-1">
                   Regular Kopi/Teh with condensed milk is naturally sweet — no sugar needed.
-                  But for <strong>C</strong> drinks, add sugar. Unless it's <strong>Kosong</strong> — then skip sugar entirely.
                 </p>
+              </div>
+
+              <div>
+                <p className="font-semibold text-kopi-brown mb-0.5">Sugar</p>
+                <p className="text-sm">For <strong>O</strong> and <strong>C</strong> drinks, add sugar. A couple of variants:</p>
+                <ul className="text-sm mt-1 ml-3 space-y-0.5">
+                  <li><strong>Siu Dai</strong> — less sweet, use the Less toggle for half sugar</li>
+                  <li><strong>Kosong</strong> — no sugar at all, skip it entirely</li>
+                </ul>
               </div>
 
               <div>
